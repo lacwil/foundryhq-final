@@ -3,17 +3,11 @@ import './App.css';
 
 function App() {
   const [prompt, setPrompt] = useState('');
-  const [result, setResult] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState('');
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
-
-    setLoading(true);
-    setResult('');
-
     try {
-      const response = await fetch('/api/generate', {
+      const res = await fetch('http://localhost:3000/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -21,34 +15,31 @@ function App() {
         body: JSON.stringify({ prompt }),
       });
 
-      const data = await response.json();
-      setResult(data.result || 'No response received.');
-    } catch (error) {
-      console.error('Error fetching:', error);
-      setResult('Something went wrong.');
-    } finally {
-      setLoading(false);
+      const data = await res.json();
+
+      if (res.ok) {
+        setResponse(data.text);
+      } else {
+        setResponse('Error: ' + (data.error || 'Something went wrong.'));
+      }
+    } catch (err) {
+      setResponse('Something went wrong.');
+      console.error(err);
     }
   };
 
   return (
-    <div className="App">
-      <h1>FoundryBot</h1>
+    <div className="app">
+      <h1>🤖 FoundryBot</h1>
       <textarea
-        placeholder="Ask FoundryBot something..."
+        placeholder="Enter your business idea prompt..."
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
-        rows={5}
-        cols={60}
+        rows={3}
       />
-      <br />
-      <button onClick={handleGenerate} disabled={loading}>
-        {loading ? 'Generating...' : 'Generate'}
-      </button>
-      <div style={{ marginTop: '20px', whiteSpace: 'pre-wrap' }}>
-        <strong>Response:</strong>
-        <p>{result}</p>
-      </div>
+      <button onClick={handleGenerate}>Generate</button>
+      <h3>Response:</h3>
+      <p>{response}</p>
     </div>
   );
 }
