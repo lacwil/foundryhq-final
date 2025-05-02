@@ -17,14 +17,14 @@ export default async function handler(req, res) {
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
       messages: [{ role: 'user', content: prompt }],
+      model: 'gpt-3.5-turbo',
     });
 
     const response = completion.choices[0].message.content;
     res.status(200).json({ result: response });
-  } catch (err) {
-    console.error('API error:', err.message);
-    res.status(500).json({ error: 'OpenAI request failed' });
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    res.status(500).json({ error: 'Failed to generate response' });
   }
 }
