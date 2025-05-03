@@ -29,12 +29,15 @@ app.post('/api/generate', async (req, res) => {
 
     const response = completion.choices[0].message.content;
     res.json({ result: response });
+
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    console.error('OpenAI API error:', error.response?.data || error.message || error);
     res.status(500).json({ error: 'Failed to generate response' });
   }
+
+  
 });
 
 app.listen(port, () => {
-  console.log(`✅ Server is running at http://localhost:${port}`);
+  console.log(`Server is running at http://localhost:${port}`);
 });
