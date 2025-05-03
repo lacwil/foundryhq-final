@@ -1,19 +1,65 @@
-.App {
-  text-align: center;
-  font-family: Arial, sans-serif;
-  padding: 2rem;
-  background-color: #f8f9fa;
-  min-height: 100vh;
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-textarea {
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f7f7f8;
+  color: #1a1a1a;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background-color: #ffffff;
+  border-right: 1px solid #e5e5e5;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Chat area */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.chat-window {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+input[type="text"] {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  width: 100%;
   font-size: 16px;
-  padding: 10px;
-  margin: 10px 0;
+  margin-top: auto;
 }
 
 button {
-  padding: 10px 20px;
+  margin-top: 10px;
+  padding: 10px 16px;
+  background-color: #10a37f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
   font-size: 16px;
   cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: #0d866b;
 }
