@@ -4,8 +4,14 @@ import './App.css';
 function App() {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleGenerate = async () => {
+    setLoading(true);
+    setError('');
+    setResponse('');
+
     try {
       const res = await fetch('http://localhost:3000/api/generate', {
         method: 'POST',
@@ -18,28 +24,42 @@ function App() {
       const data = await res.json();
 
       if (res.ok) {
-        setResponse(data.text);
+        setResponse(data.result);
       } else {
-        setResponse('Error: ' + (data.error || 'Something went wrong.'));
+        setError(data.error || 'Something went wrong');
       }
     } catch (err) {
-      setResponse('Something went wrong.');
-      console.error(err);
+      setError('Error connecting to server');
     }
+
+    setLoading(false);
   };
 
   return (
-    <div className="app">
-      <h1>🤖 FoundryBot</h1>
+    <div className="App">
+      <h1>FoundryBot</h1>
       <textarea
-        placeholder="Enter your business idea prompt..."
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
-        rows={3}
+        placeholder="Ask FoundryBot something..."
+        rows={4}
+        cols={50}
       />
-      <button onClick={handleGenerate}>Generate</button>
-      <h3>Response:</h3>
-      <p>{response}</p>
+      <br />
+      <button onClick={handleGenerate} disabled={loading}>
+        {loading ? 'Generating...' : 'Generate'}
+      </button>
+      {response && (
+        <div className="response">
+          <h3>Response:</h3>
+          <p>{response}</p>
+        </div>
+      )}
+      {error && (
+        <div className="error">
+          <p style={{ color: 'red' }}>{error}</p>
+        </div>
+      )}
     </div>
   );
 }
