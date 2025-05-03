@@ -1,52 +1,61 @@
-// src/App.jsx
-import { useState } from "react";
-import Sidebar from "./components/Sidebar";
-import "./App.css";
+import React, { useState } from 'react';
 
 function App() {
-  const [prompt, setPrompt] = useState("");
-  const [response, setResponse] = useState("");
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState('');
 
   const handleGenerate = async () => {
-    setResponse("Loading...");
     try {
-      const res = await fetch("http://localhost:3000/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('http://localhost:3000/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
       });
 
       const data = await res.json();
-      setResponse(data.result || "No result returned");
-    } catch (err) {
-      setResponse("Error: " + err.message);
+      setResponse(data.result || 'Error: No result returned');
+    } catch (error) {
+      setResponse('Error generating response.');
+      console.error(error);
     }
   };
 
   return (
-    <div className="flex font-sans">
-      <Sidebar />
-      <main className="flex-1 bg-white h-screen overflow-y-auto p-6">
-        <h1 className="text-2xl font-semibold mb-4">Ask FoundryBot</h1>
-        <div className="flex flex-col space-y-4">
-          <textarea
-            className="w-full p-4 border rounded resize-none"
-            rows={4}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Enter your prompt here..."
-          />
-          <button
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-fit"
-            onClick={handleGenerate}
-          >
-            Generate
-          </button>
-          <div className="mt-4 whitespace-pre-wrap bg-gray-100 p-4 rounded min-h-[150px]">
-            {response}
+    <div className="flex h-screen">
+      {/* Sidebar */}
+      <div className="w-64 bg-gray-900 text-white p-4">
+        <h2 className="text-xl font-semibold mb-4">FoundryBot</h2>
+        <ul className="space-y-2">
+          <li className="hover:bg-gray-700 p-2 rounded">New Chat</li>
+          <li className="hover:bg-gray-700 p-2 rounded">Saved Prompts</li>
+          <li className="hover:bg-gray-700 p-2 rounded">Settings</li>
+        </ul>
+      </div>
+
+      {/* Main chat area */}
+      <div className="flex-1 flex flex-col p-6 bg-gray-100 overflow-y-auto">
+        <div className="flex flex-col gap-4 flex-grow">
+          <div className="bg-white p-4 rounded shadow">
+            <h3 className="text-lg font-medium">AI Response:</h3>
+            <p className="mt-2 whitespace-pre-wrap">{response}</p>
           </div>
         </div>
-      </main>
+
+        <div className="mt-6 flex">
+          <input
+            className="flex-grow p-3 border border-gray-300 rounded-l"
+            placeholder="Ask FoundryBot..."
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+          />
+          <button
+            className="bg-black text-white px-6 rounded-r"
+            onClick={handleGenerate}
+          >
+            Send
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
