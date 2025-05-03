@@ -10,9 +10,10 @@ const port = 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const apiKey = process.env.OPENAI_API_KEY;
+console.log('Loaded API Key:', apiKey);
+
+const openai = new OpenAI({ apiKey });
 
 app.post('/api/generate', async (req, res) => {
   const { prompt } = req.body;
@@ -31,11 +32,9 @@ app.post('/api/generate', async (req, res) => {
     res.json({ result: response });
 
   } catch (error) {
-    console.error('OpenAI API error:', error.response?.data || error.message || error);
+    console.error('🔴 OpenAI API Error:', error?.response?.data || error.message || error);
     res.status(500).json({ error: 'Failed to generate response' });
   }
-
-  
 });
 
 app.listen(port, () => {
