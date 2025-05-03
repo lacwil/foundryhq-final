@@ -1,0 +1,15 @@
+{
+  "name": "api-server",
+  "version": "1.0.0",
+  "main": "generate.cjs",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node generate.cjs"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "openai": "^4.19.1"
+  }
+}
