@@ -1,38 +1,32 @@
 export default async function handler(req, res) {
-  console.log("🔁 API HIT: /api/generate");
-
   const { prompt } = req.body;
 
+  console.log('🔑 API key being used:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
+
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: "You are FoundryBot, a helpful business builder assistant.",
-          },
-          { role: "user", content: prompt },
-        ],
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
-    const result = await response.json();
-    const content = result.choices?.[0]?.message?.content || "";
+    const data = await response.json();
 
-    const [reply, canvas] = content.split("<!--canvas-->");
+    if (!response.ok) {
+      console.error('❌ OpenAI API error:', data);
+      return res.status(500).json({ reply: 'Error from OpenAI API.' });
+    }
 
-    res.status(200).json({
-      reply: reply.trim(),
-      canvas: canvas ? canvas.trim() : "",
-    });
+    const reply = data.choices?.[0]?.message?.content || 'No reply.';
+    return res.status(200).json({ reply, canvas: '' });
   } catch (err) {
-    console.error("❌ OpenAI API Error:", err);
-    res.status(500).json({ reply: "❌ Failed to fetch AI response." });
+    console.error('❌ Server error:', err);
+    return res.status(500).json({ reply: 'Server error occurred.' });
   }
 }
