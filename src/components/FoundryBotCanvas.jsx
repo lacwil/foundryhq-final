@@ -34,7 +34,7 @@ function FoundryBotCanvas() {
   };
 
   return (
-    <div className="flex h-screen w-screen">
+    <div className="flex h-screen w-screen overflow-hidden">
       {/* Sidebar */}
       <div className="w-64 bg-white border-r p-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">FoundryBot</h2>
@@ -46,10 +46,15 @@ function FoundryBotCanvas() {
       </div>
 
       {/* Main content */}
-      <div className="flex flex-col flex-1 p-6 bg-gray-50 overflow-y-auto">
+      <div className="flex flex-col flex-1 p-6 bg-gray-50 overflow-y-auto break-words">
         <div className="flex flex-col space-y-4">
           {messages.map((msg, idx) => (
-            <p key={idx}><strong>{msg.role === 'user' ? 'You' : 'Bot'}:</strong> {msg.content}</p>
+            <p
+              key={idx}
+              className="whitespace-pre-wrap break-words text-sm text-gray-800"
+            >
+              <strong>{msg.role === 'user' ? 'You' : 'Bot'}:</strong> {msg.content}
+            </p>
           ))}
         </div>
 
