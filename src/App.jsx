@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 function App() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef(null);
 
   const handleSend = () => {
@@ -21,13 +22,26 @@ function App() {
       reply = "🤖 Sorry, I don't have a response for that topic yet.";
     }
 
-    setMessages((prev) => [...prev, reply]);
+    setMessages((prev) => [...prev, '🧠 FoundryBot is typing...']);
+    setIsTyping(true);
     setInput('');
+
+    setTimeout(() => {
+      setMessages((prev) => [...prev.slice(0, -1), reply]);
+      setIsTyping(false);
+    }, 1200);
   };
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isTyping]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   return (
     <div
@@ -56,28 +70,4 @@ function App() {
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: '12px',
-            paddingRight: '4px',
-            marginBottom: '12px',
-          }}
-        >
-          {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              style={{
-                backgroundColor: '#fff',
-                padding: '12px',
-                borderRadius: '10px',
-                whiteSpace: 'pre-line',
-                fontSize: '14px',
-                lineHeight: '1.5',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              }}
-            >
-              {msg}
-            </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* Input form to supp*
+            gap: '12
