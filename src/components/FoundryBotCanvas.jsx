@@ -5,7 +5,7 @@ function FoundryBotCanvas() {
     { role: 'bot', content: "Welcome to FoundryBot! What type of project would you like to start today?" }
   ]);
   const [input, setInput] = useState('');
-  const [response, setResponse] = useState('');
+  const [canvasOutput, setCanvasOutput] = useState('');
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -22,45 +22,40 @@ function FoundryBotCanvas() {
       });
 
       const data = await res.json();
-      if (data.result) {
-        setMessages([...updatedMessages, { role: 'bot', content: data.result }]);
-        setResponse(data.result);
-      } else {
-        setMessages([...updatedMessages, { role: 'bot', content: 'Error generating response.' }]);
-      }
-    } catch (err) {
-      setMessages([...updatedMessages, { role: 'bot', content: 'Error generating response.' }]);
+      const result = data.result || 'Error generating response.';
+      setMessages([...updatedMessages, { role: 'bot', content: result }]);
+      setCanvasOutput(result);
+    } catch {
+      const errorMsg = 'Error generating response.';
+      setMessages([...updatedMessages, { role: 'bot', content: errorMsg }]);
+      setCanvasOutput(errorMsg);
     }
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-64 bg-white border-r p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">FoundryBot</h2>
-        <ul className="space-y-4 text-gray-700">
-          <li>New Chat</li>
-          <li>Saved Prompts</li>
-          <li>Settings</li>
+    <div className="flex h-screen w-screen font-sans">
+      {/* Left Sidebar */}
+      <div className="w-80 bg-white border-r p-6 flex flex-col">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">FoundryBot</h2>
+        <ul className="space-y-2 mb-6 text-gray-700 text-sm">
+          <li className="hover:text-black cursor-pointer">New Chat</li>
+          <li className="hover:text-black cursor-pointer">Saved Prompts</li>
+          <li className="hover:text-black cursor-pointer">Settings</li>
         </ul>
-      </div>
 
-      {/* Main content */}
-      <div className="flex flex-col flex-1 p-6 bg-gray-50 overflow-y-auto break-words">
-        <div className="flex flex-col space-y-4">
+        {/* Message history */}
+        <div className="flex-1 overflow-y-auto pr-2 mb-4 text-sm">
           {messages.map((msg, idx) => (
-            <p
-              key={idx}
-              className="whitespace-pre-wrap break-words text-sm text-gray-800"
-            >
+            <p key={idx} className="mb-2">
               <strong>{msg.role === 'user' ? 'You' : 'Bot'}:</strong> {msg.content}
             </p>
           ))}
         </div>
 
-        <div className="mt-auto flex items-center pt-6">
+        {/* Input bar */}
+        <div className="mt-auto flex items-center">
           <input
-            className="flex-1 border rounded px-4 py-2 mr-4 text-sm"
+            className="flex-1 border border-gray-300 rounded px-3 py-1 text-sm mr-2"
             type="text"
             placeholder="Ask FoundryBot..."
             value={input}
@@ -68,11 +63,19 @@ function FoundryBotCanvas() {
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           />
           <button
-            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 text-sm"
+            className="bg-black text-white px-4 py-1 rounded text-sm"
             onClick={handleSend}
           >
             Send
           </button>
+        </div>
+      </div>
+
+      {/* Main Canvas Output */}
+      <div className="flex-1 bg-gray-50 p-10 overflow-y-auto">
+        <h3 className="text-xl font-semibold mb-4">Canvas Output:</h3>
+        <div className="text-gray-800 text-base leading-relaxed whitespace-pre-wrap">
+          {canvasOutput || 'Nothing yet. Ask FoundryBot to start building!'}
         </div>
       </div>
     </div>
