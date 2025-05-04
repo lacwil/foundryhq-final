@@ -36,13 +36,6 @@ function App() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
   return (
     <div
       style={{
@@ -70,4 +63,89 @@ function App() {
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: '12
+            gap: '12px',
+            paddingRight: '4px',
+            marginBottom: '12px',
+          }}
+        >
+          {messages.map((msg, idx) => (
+            <div
+              key={idx}
+              style={{
+                backgroundColor: msg.includes('typing...') ? '#e0e0e0' : '#fff',
+                padding: '12px',
+                borderRadius: '10px',
+                whiteSpace: 'pre-line',
+                fontSize: '14px',
+                lineHeight: '1.5',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                fontStyle: msg.includes('typing...') ? 'italic' : 'normal',
+              }}
+            >
+              {msg}
+            </div>
+          ))}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Input with Enter / Shift+Enter */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Type your message..."
+            rows={2}
+            style={{
+              flex: 1,
+              padding: '10px',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              fontSize: '14px',
+              resize: 'none',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            type="button"
+            style={{
+              backgroundColor: '#000',
+              color: '#fff',
+              padding: '10px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            Send
+          </button>
+        </div>
+      </div>
+
+      {/* Main Canvas Area */}
+      <div
+        style={{
+          flexGrow: 1,
+          backgroundColor: '#fff',
+          padding: '40px',
+          overflowY: 'auto',
+        }}
+      >
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
+          Canvas Area
+        </h1>
+        <p style={{ fontSize: '16px', lineHeight: '1.7', color: '#444' }}>
+          This is your interactive canvas. The chat stays active on the left while this area can display tools, forms, content, code previews or AI results.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default App;
