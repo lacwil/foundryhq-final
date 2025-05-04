@@ -1,18 +1,36 @@
+// Plan:
+// 1. Get project list from external source (dashboard context)
+// 2. Disable manual project add/rename
+// 3. Save chat history per project in localStorage
+
 import React, { useState, useEffect, useRef } from 'react';
+
+const DEFAULT_PROJECT = 'Default Project';
+const DASHBOARD_PROJECTS = ['Default Project', 'My Website', 'Fitness App']; // To be replaced with dynamic fetch
 
 function App() {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState(() => {
-    const saved = localStorage.getItem('foundry_chat');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [selectedProject, setSelectedProject] = useState(DEFAULT_PROJECT);
+  const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+
   const chatEndRef = useRef(null);
 
-  const saveMessages = (updatedMessages) => {
-    setMessages(updatedMessages);
-    localStorage.setItem('foundry_chat', JSON.stringify(updatedMessages));
+  const getStorageKey = (project) => `foundry_chat_${project}`;
+
+  const loadMessages = (project) => {
+    const saved = localStorage.getItem(getStorageKey(project));
+    return saved ? JSON.parse(saved) : [];
   };
+
+  const saveMessages = (msgs) => {
+    setMessages(msgs);
+    localStorage.setItem(getStorageKey(selectedProject), JSON.stringify(msgs));
+  };
+
+  useEffect(() => {
+    setMessages(loadMessages(selectedProject));
+  }, [selectedProject]);
 
   const handleSend = () => {
     const trimmed = input.trim();
@@ -26,17 +44,13 @@ function App() {
     setInput('');
     setIsTyping(true);
 
-    const lower = trimmed.toLowerCase();
     let reply = '';
+    const lower = trimmed.toLowerCase();
 
     if (lower.includes('fitness')) {
-      reply =
-        '🏋️‍♂️ A fitness app helps track workouts, nutrition, and goals. Popular apps include:\n- MyFitnessPal\n- Nike Training Club\n- Strava\n- Fitbit.';
-    } else if (lower.includes('tshirt') || lower.includes('t-shirt')) {
-      reply =
-        '👕 Funny t-shirt websites:\n1. Snorg Tees\n2. Busted Tees\n3. Threadless\n4. The Chivery\n5. Look Human\n6. 6 Dollar Shirts\n7. TeeFury\n8. Redbubble';
+      reply = '🏋️‍♂️ Fitness app ideas...';
     } else {
-      reply = "🤖 Sorry, I don't have a response for that topic yet.";
+      reply = '🤖 No response for that yet.';
     }
 
     setTimeout(() => {
@@ -51,35 +65,39 @@ function App() {
   }, [messages, isTyping]);
 
   return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
-      {/* Chat Sidebar */}
-      <div style={{ width: '360px', borderRight: '1px solid #ddd', backgroundColor: '#f9f9f9', display: 'flex', flexDirection: 'column', padding: '20px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>FoundryBot</h2>
+    <div style={{ display: 'flex', height: '100vh' }}>
+      {/* Sidebar */}
+      <div style={{ width: '360px', borderRight: '1px solid #ddd', background: '#f9f9f9', padding: 20, display: 'flex', flexDirection: 'column' }}>
+        <h2>FoundryBot</h2>
 
-        <div style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px', marginBottom: '12px' }}>
+        <div style={{ marginBottom: 10 }}>
+          <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={{ width: '100%', padding: '6px' }}>
+            {DASHBOARD_PROJECTS.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: 10 }}>
           {messages.map((msg, idx) => (
             <div
               key={idx}
               style={{
-                backgroundColor: msg.sender === 'bot' ? '#fff' : '#d9fdd3',
-                padding: '12px',
-                borderRadius: '10px',
-                whiteSpace: 'pre-line',
-                fontSize: '14px',
-                lineHeight: '1.5',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                maxWidth: '90%',
+                backgroundColor: msg.sender === 'user' ? '#d9fdd3' : '#fff',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 6,
+                whiteSpace: 'pre-line'
               }}
             >
               <strong>{msg.sender === 'user' ? 'You' : '🤖 FoundryBot'}:</strong> {msg.text}
             </div>
           ))}
+          {isTyping && <div style={{ fontStyle: 'italic' }}>FoundryBot is typing...</div>}
           <div ref={chatEndRef} />
         </div>
 
-        {/* Input */}
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -91,39 +109,16 @@ function App() {
             }}
             placeholder="Type your message..."
             rows={2}
-            style={{
-              flex: 1,
-              padding: '10px',
-              borderRadius: '8px',
-              border: '1px solid #ccc',
-              fontSize: '14px',
-              resize: 'none',
-            }}
+            style={{ flex: 1, resize: 'none', padding: 10 }}
           />
-          <button
-            onClick={handleSend}
-            type="button"
-            style={{
-              backgroundColor: '#000',
-              color: '#fff',
-              padding: '10px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-            }}
-          >
-            Send
-          </button>
+          <button onClick={handleSend} style={{ padding: '10px 16px', background: '#000', color: '#fff' }}>Send</button>
         </div>
       </div>
 
-      {/* Canvas Area */}
-      <div style={{ flexGrow: 1, backgroundColor: '#fff', padding: '40px', overflowY: 'auto' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>Canvas Area</h1>
-        <p style={{ fontSize: '16px', lineHeight: '1.7', color: '#444' }}>
-          This is your interactive canvas. The chat stays active on the left while this area can display tools, forms, content, code previews or AI results.
-        </p>
+      {/* Canvas */}
+      <div style={{ flexGrow: 1, padding: 40 }}>
+        <h1>Canvas Area</h1>
+        <p>This is your interactive project area for: <strong>{selectedProject}</strong></p>
       </div>
     </div>
   );
