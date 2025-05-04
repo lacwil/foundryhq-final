@@ -3,45 +3,32 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { prompt } = req.body;
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  console.log('Incoming prompt:', prompt);
-  console.log('Using OpenAI Key:', apiKey ? '✅ exists' : '❌ missing');
-
-  if (!apiKey) {
-    return res.status(500).json({ error: 'OpenAI API key not set.' });
-  }
-
   try {
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    const { prompt } = req.body;
+
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    if (!OPENAI_API_KEY) {
+      console.error("Missing API key in env");
+      return res.status(500).json({ error: 'API key not set' });
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-      }),
+        messages: [{ role: 'user', content: prompt }]
+      })
     });
 
-    const json = await openaiRes.json();
-    console.log('OpenAI raw response:', JSON.stringify(json, null, 2));
-
-    if (!openaiRes.ok || !json.choices) {
-      return res.status(500).json({ error: 'OpenAI error', details: json });
-    }
-
-    const reply = json.choices[0].message.content;
-
-    res.status(200).json({
-      reply: reply.trim(),
-      canvas: '', // leave empty for now until AI sends HTML
-    });
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || 'No reply from AI.';
+    res.status(200).json({ reply, canvas: '' });
   } catch (err) {
-    console.error('API call failed:', err);
-    res.status(500).json({ error: 'Internal server error', details: err.message });
+    console.error('Fetch failed:', err);
+    res.status(500).json({ error: 'Failed to fetch AI response.' });
   }
 }
