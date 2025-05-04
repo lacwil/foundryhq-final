@@ -1,7 +1,9 @@
+
 // Plan:
 // 1. Get project list from external source (dashboard context)
 // 2. Disable manual project add/rename
 // 3. Save chat history per project in localStorage
+// 4. Inject results into canvas area based on FoundryBot replies
 
 import React, { useState, useEffect, useRef } from 'react';
 
@@ -13,6 +15,7 @@ function App() {
   const [selectedProject, setSelectedProject] = useState(DEFAULT_PROJECT);
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [canvasContent, setCanvasContent] = useState('');
 
   const chatEndRef = useRef(null);
 
@@ -29,7 +32,10 @@ function App() {
   };
 
   useEffect(() => {
-    setMessages(loadMessages(selectedProject));
+    const msgs = loadMessages(selectedProject);
+    setMessages(msgs);
+    const lastBotMsg = [...msgs].reverse().find(m => m.sender === 'bot' && m.canvas);
+    if (lastBotMsg) setCanvasContent(lastBotMsg.canvas);
   }, [selectedProject]);
 
   const handleSend = () => {
@@ -45,16 +51,26 @@ function App() {
     setIsTyping(true);
 
     let reply = '';
+    let canvas = '';
     const lower = trimmed.toLowerCase();
 
     if (lower.includes('fitness')) {
-      reply = '🏋️‍♂️ Fitness app ideas...';
+      reply = '🏋️‍♂️ Great! Here’s a basic fitness app landing page layout.';
+      canvas = '<h2>Fitness App Landing Page</h2><ul><li>Track Workouts</li><li>Monitor Progress</li><li>Connect with Trainers</li></ul>';
+    } else if (lower.includes('website')) {
+      reply = '🌐 Here’s a sample home page structure.';
+      canvas = '<h2>My Website</h2><p>Welcome to our homepage. We build amazing things.</p>';
     } else {
-      reply = '🤖 No response for that yet.';
+      reply = "🤖 Sorry, I don't have a response for that topic yet.";
     }
 
     setTimeout(() => {
-      const updatedWithReply = [...updated.slice(0, -1), { sender: 'bot', text: reply }];
+      const botReply = { sender: 'bot', text: reply };
+      if (canvas) {
+        botReply.canvas = canvas;
+        setCanvasContent(canvas);
+      }
+      const updatedWithReply = [...updated.slice(0, -1), botReply];
       saveMessages(updatedWithReply);
       setIsTyping(false);
     }, 1000);
@@ -119,6 +135,16 @@ function App() {
       <div style={{ flexGrow: 1, padding: 40 }}>
         <h1>Canvas Area</h1>
         <p>This is your interactive project area for: <strong>{selectedProject}</strong></p>
+        <div
+          style={{
+            marginTop: 20,
+            padding: 20,
+            border: '1px solid #ddd',
+            borderRadius: 8,
+            background: '#fff'
+          }}
+          dangerouslySetInnerHTML={{ __html: canvasContent }}
+        />
       </div>
     </div>
   );
