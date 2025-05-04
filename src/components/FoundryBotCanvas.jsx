@@ -1,71 +1,72 @@
 import { useState } from 'react';
 
-function FoundryBotCanvas() {
+export default function FoundryBotCanvas() {
   const [messages, setMessages] = useState([
-    { sender: 'bot', text: 'Hi! What type of project do you want to start today?' }
+    { role: 'bot', content: "Welcome to FoundryBot! What type of project would you like to start today?" }
   ]);
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const newMessages = [...messages, { sender: 'user', text: input }];
+    const newMessages = [...messages, { role: 'user', content: input }];
     setMessages(newMessages);
     setInput('');
+    setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3000/api/generate', {
+      const response = await fetch('http://localhost:3000/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: input }),
       });
 
-      const data = await res.json();
-      if (data.result) {
-        setMessages([...newMessages, { sender: 'bot', text: data.result }]);
-      } else {
-        setMessages([...newMessages, { sender: 'bot', text: 'Error: No result returned.' }]);
-      }
+      const data = await response.json();
+      setMessages([...newMessages, { role: 'bot', content: data.result || 'Error generating response.' }]);
     } catch (err) {
-      setMessages([...newMessages, { sender: 'bot', text: 'Error generating response.' }]);
+      setMessages([...newMessages, { role: 'bot', content: 'Error generating response.' }]);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
-      <aside className="w-64 bg-white p-4 border-r shadow">
-        <h2 className="text-2xl font-bold mb-4">FoundryBot</h2>
-        <ul className="space-y-2 text-blue-700 font-medium">
-          <li>New Chat</li>
-          <li>Saved Prompts</li>
-          <li>Settings</li>
+      <aside className="w-64 bg-gray-800 text-white p-6 space-y-4">
+        <h1 className="text-2xl font-bold">FoundryBot</h1>
+        <ul className="space-y-2">
+          <li className="hover:underline cursor-pointer">New Chat</li>
+          <li className="hover:underline cursor-pointer">Saved Prompts</li>
+          <li className="hover:underline cursor-pointer">Settings</li>
         </ul>
       </aside>
 
-      {/* Main Chat + Canvas */}
-      <main className="flex-1 p-6 flex flex-col">
-        <div className="flex-1 overflow-auto space-y-4">
-          {messages.map((msg, idx) => (
-            <div key={idx} className={`text-${msg.sender === 'bot' ? 'gray' : 'blue'}-800`}>
-              <strong>{msg.sender === 'bot' ? 'FoundryBot:' : 'You:'}</strong> {msg.text}
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col bg-white p-6 overflow-hidden">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-4">
+          {messages.map((msg, i) => (
+            <div key={i} className={`whitespace-pre-line ${msg.role === 'user' ? 'text-blue-700' : 'text-gray-800 font-medium'}`}>
+              <strong>{msg.role === 'user' ? 'You' : 'Bot'}:</strong> {msg.content}
             </div>
           ))}
+          {loading && <p className="text-gray-500 italic">Thinking...</p>}
         </div>
 
-        {/* Input Area */}
-        <div className="mt-4 flex">
+        {/* Input */}
+        <div className="flex mt-4 border-t pt-4">
           <input
             type="text"
-            value={input}
+            className="flex-1 border rounded-l px-4 py-2 text-black"
             placeholder="Ask FoundryBot..."
+            value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            className="flex-1 border border-gray-300 rounded px-3 py-2 mr-2"
           />
           <button
             onClick={handleSend}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-6 rounded-r hover:bg-blue-700"
           >
             Send
           </button>
@@ -74,5 +75,3 @@ function FoundryBotCanvas() {
     </div>
   );
 }
-
-export default FoundryBotCanvas;
