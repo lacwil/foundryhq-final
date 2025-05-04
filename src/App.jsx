@@ -1,14 +1,13 @@
 
 // Plan:
-// 1. Get project list from external source (dashboard context)
-// 2. Disable manual project add/rename
-// 3. Save chat history per project in localStorage
-// 4. Inject results into canvas area based on FoundryBot replies
+// 1. Use OpenAI API to generate responses and canvas output dynamically
+// 2. Save chat history per project in localStorage
+// 3. Inject results into canvas area based on AI reply
 
 import React, { useState, useEffect, useRef } from 'react';
 
 const DEFAULT_PROJECT = 'Default Project';
-const DASHBOARD_PROJECTS = ['Default Project', 'My Website', 'Fitness App']; // To be replaced with dynamic fetch
+const DASHBOARD_PROJECTS = ['Default Project', 'My Website', 'Fitness App'];
 
 function App() {
   const [input, setInput] = useState('');
@@ -38,7 +37,7 @@ function App() {
     if (lastBotMsg) setCanvasContent(lastBotMsg.canvas);
   }, [selectedProject]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed) return;
 
@@ -50,30 +49,32 @@ function App() {
     setInput('');
     setIsTyping(true);
 
-    let reply = '';
-    let canvas = '';
-    const lower = trimmed.toLowerCase();
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: trimmed })
+      });
 
-    if (lower.includes('fitness')) {
-      reply = '🏋️‍♂️ Great! Here’s a basic fitness app landing page layout.';
-      canvas = '<h2>Fitness App Landing Page</h2><ul><li>Track Workouts</li><li>Monitor Progress</li><li>Connect with Trainers</li></ul>';
-    } else if (lower.includes('website')) {
-      reply = '🌐 Here’s a sample home page structure.';
-      canvas = '<h2>My Website</h2><p>Welcome to our homepage. We build amazing things.</p>';
-    } else {
-      reply = "🤖 Sorry, I don't have a response for that topic yet.";
-    }
+      const data = await response.json();
+      const reply = data.reply || "🤖 Couldn't generate a response.";
+      const canvas = data.canvas || '';
 
-    setTimeout(() => {
       const botReply = { sender: 'bot', text: reply };
       if (canvas) {
         botReply.canvas = canvas;
         setCanvasContent(canvas);
       }
+
       const updatedWithReply = [...updated.slice(0, -1), botReply];
       saveMessages(updatedWithReply);
-      setIsTyping(false);
-    }, 1000);
+    } catch (err) {
+      const errorReply = { sender: 'bot', text: '❌ Failed to fetch AI response.' };
+      const updatedWithError = [...updated.slice(0, -1), errorReply];
+      saveMessages(updatedWithError);
+    }
+
+    setIsTyping(false);
   };
 
   useEffect(() => {
