@@ -23,7 +23,6 @@ function App() {
     setInput('');
   };
 
-  // Auto-scroll to latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -31,49 +30,45 @@ function App() {
   return (
     <div
       style={{
-        backgroundColor: '#f5f5f5',
-        fontFamily: 'system-ui, sans-serif',
-        minHeight: '100vh',
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '30px 16px',
+        height: '100vh',
+        fontFamily: 'system-ui, sans-serif',
       }}
     >
-      <div style={{ maxWidth: '700px', width: '100%' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '20px' }}>FoundryBot</h1>
+      {/* Sidebar Chat */}
+      <div
+        style={{
+          width: '340px',
+          borderRight: '1px solid #ddd',
+          backgroundColor: '#f9f9f9',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '20px',
+        }}
+      >
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>FoundryBot</h2>
 
-        <ul style={{ marginBottom: '20px', paddingLeft: '20px' }}>
-          <li><a href="#" style={{ color: '#007bff' }}>New Chat</a></li>
-          <li><a href="#" style={{ color: '#007bff' }}>Saved Prompts</a></li>
-          <li><a href="#" style={{ color: '#007bff' }}>Settings</a></li>
-        </ul>
-
-        {/* Chat window */}
         <div
           style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '12px',
-            border: '1px solid #ddd',
-            padding: '16px',
-            height: '400px',
+            flexGrow: 1,
             overflowY: 'auto',
-            marginBottom: '20px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px',
+            gap: '12px',
+            paddingRight: '4px',
           }}
         >
           {messages.map((msg, idx) => (
             <div
               key={idx}
               style={{
-                backgroundColor: '#f0f0f0',
-                borderRadius: '12px',
-                padding: '12px 16px',
+                backgroundColor: '#fff',
+                padding: '12px',
+                borderRadius: '10px',
                 whiteSpace: 'pre-line',
+                fontSize: '14px',
+                lineHeight: '1.5',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                maxWidth: '100%',
               }}
             >
               {msg}
@@ -82,40 +77,43 @@ function App() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Input */}
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
           <input
-            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
+            placeholder="Ask something..."
             style={{
               flex: 1,
-              padding: '12px 14px',
-              borderRadius: '12px',
+              padding: '10px',
+              borderRadius: '8px',
               border: '1px solid #ccc',
-              fontSize: '16px',
+              fontSize: '14px',
             }}
           />
           <button
             onClick={handleSend}
             style={{
-              padding: '12px 20px',
-              borderRadius: '12px',
               backgroundColor: '#000',
               color: '#fff',
-              fontWeight: '600',
+              padding: '10px 16px',
+              borderRadius: '8px',
               border: 'none',
-              fontSize: '16px',
               cursor: 'pointer',
+              fontWeight: 'bold',
             }}
           >
             Send
           </button>
         </div>
       </div>
-    </div>
-  );
-}
 
-export default App;
+      {/* Canvas / Main Content Area */}
+      <div
+        style={{
+          flexGrow: 1,
+          backgroundColor: '#ffffff',
+          padding: '40px',
+          overflowY: 'auto',
+        }}
+      >
+        <
