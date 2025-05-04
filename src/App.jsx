@@ -22,7 +22,7 @@ function App() {
 
   return (
     <div className="w-full min-h-screen bg-white px-6 py-8 text-gray-900 font-sans overflow-x-hidden">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">FoundryBot</h1>
 
         <nav className="mb-6">
@@ -35,36 +35,9 @@ function App() {
 
         <div className="text-lg font-semibold mb-2">AI Response:</div>
 
-        <div
-          className="bg-gray-100 p-4 rounded-md mb-6 text-base text-gray-800"
-          style={{
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            overflowWrap: 'break-word',
-            maxWidth: '100%',
-          }}
-        >
-          {response}
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 w-full max-w-md"
-            placeholder="Type something..."
-          />
-          <button
-            onClick={handleSend}
-            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
-          >
-            Send
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default App;
+        <div className="w-full flex justify-start">
+          <div
+            className="bg-gray-100 p-4 rounded-md text-base text-gray-800 leading-relaxed"
+            style={{
+              maxWidth: '700px',
+              whiteSpace: 'pre-wr
