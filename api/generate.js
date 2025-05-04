@@ -1,32 +1,35 @@
+// api/generate.js
+
+import { Configuration, OpenAIApi } from 'openai';
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY, // ← should match what’s in Vercel and .env
+});
+
+const openai = new OpenAIApi(configuration);
+
 export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   const { prompt } = req.body;
 
-  console.log('🔑 API key being used:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
+  if (!prompt) {
+    return res.status(400).json({ error: 'Prompt is required' });
+  }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }],
-      }),
+    const completion = await openai.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('❌ OpenAI API error:', data);
-      return res.status(500).json({ reply: 'Error from OpenAI API.' });
-    }
-
-    const reply = data.choices?.[0]?.message?.content || 'No reply.';
-    return res.status(200).json({ reply, canvas: '' });
-  } catch (err) {
-    console.error('❌ Server error:', err);
-    return res.status(500).json({ reply: 'Server error occurred.' });
+    const reply = completion.data.choices[0]?.message?.content || 'No response generated.';
+    res.status(200).json({ reply });
+  } catch (error) {
+    console.error('❌ OpenAI API Error:', error?.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to generate response from OpenAI.' });
   }
 }
