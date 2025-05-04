@@ -6,6 +6,8 @@ function App() {
   const chatEndRef = useRef(null);
 
   const handleSend = () => {
+    if (!input.trim()) return;
+
     const lower = input.toLowerCase();
     let reply = '';
 
@@ -78,54 +80,4 @@ function App() {
           <div ref={chatEndRef} />
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask something..."
-            style={{
-              flex: 1,
-              padding: '10px',
-              borderRadius: '8px',
-              border: '1px solid #ccc',
-              fontSize: '14px',
-            }}
-          />
-          <button
-            onClick={handleSend}
-            style={{
-              backgroundColor: '#000',
-              color: '#fff',
-              padding: '10px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-            }}
-          >
-            Send
-          </button>
-        </div>
-      </div>
-
-      {/* Main Canvas Area */}
-      <div
-        style={{
-          flexGrow: 1,
-          backgroundColor: '#fff',
-          padding: '40px',
-          overflowY: 'auto',
-        }}
-      >
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
-          Canvas Area
-        </h1>
-        <p style={{ fontSize: '16px', lineHeight: '1.7', color: '#444' }}>
-          This is your interactive canvas. The chat stays active on the left while this area can display tools, forms, content, code previews or AI results.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-export default App;
+        {/* Input form to supp*
