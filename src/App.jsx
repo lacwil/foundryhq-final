@@ -2,9 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 
 function App() {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem('foundry_chat');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef(null);
+
+  const saveMessages = (newMessages) => {
+    setMessages(newMessages);
+    localStorage.setItem('foundry_chat', JSON.stringify(newMessages));
+  };
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -22,12 +30,14 @@ function App() {
       reply = "🤖 Sorry, I don't have a response for that topic yet.";
     }
 
-    setMessages((prev) => [...prev, '🧠 FoundryBot is typing...']);
+    const updated = [...messages, input, '🧠 FoundryBot is typing...'];
+    saveMessages(updated);
     setIsTyping(true);
     setInput('');
 
     setTimeout(() => {
-      setMessages((prev) => [...prev.slice(0, -1), reply]);
+      const updatedWithReply = [...updated.slice(0, -1), reply];
+      saveMessages(updatedWithReply);
       setIsTyping(false);
     }, 1200);
   };
@@ -37,37 +47,12 @@ function App() {
   }, [messages, isTyping]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        height: '100vh',
-        fontFamily: 'system-ui, sans-serif',
-      }}
-    >
+    <div style={{ display: 'flex', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
       {/* Sidebar Chat */}
-      <div
-        style={{
-          width: '360px',
-          borderRight: '1px solid #ddd',
-          backgroundColor: '#f9f9f9',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '20px',
-        }}
-      >
+      <div style={{ width: '360px', borderRight: '1px solid #ddd', backgroundColor: '#f9f9f9', display: 'flex', flexDirection: 'column', padding: '20px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>FoundryBot</h2>
 
-        <div
-          style={{
-            flexGrow: 1,
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            paddingRight: '4px',
-            marginBottom: '12px',
-          }}
-        >
+        <div style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px', marginBottom: '12px' }}>
           {messages.map((msg, idx) => (
             <div
               key={idx}
@@ -129,17 +114,8 @@ function App() {
       </div>
 
       {/* Main Canvas Area */}
-      <div
-        style={{
-          flexGrow: 1,
-          backgroundColor: '#fff',
-          padding: '40px',
-          overflowY: 'auto',
-        }}
-      >
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
-          Canvas Area
-        </h1>
+      <div style={{ flexGrow: 1, backgroundColor: '#fff', padding: '40px', overflowY: 'auto' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>Canvas Area</h1>
         <p style={{ fontSize: '16px', lineHeight: '1.7', color: '#444' }}>
           This is your interactive canvas. The chat stays active on the left while this area can display tools, forms, content, code previews or AI results.
         </p>
