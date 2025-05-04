@@ -18,7 +18,10 @@ function App() {
     const trimmed = input.trim();
     if (!trimmed) return;
 
-    const updated = [...messages, { sender: 'user', text: trimmed }];
+    const userMessage = { sender: 'user', text: trimmed };
+    const typingMsg = { sender: 'bot', text: 'FoundryBot is typing...' };
+
+    const updated = [...messages, userMessage, typingMsg];
     saveMessages(updated);
     setInput('');
     setIsTyping(true);
@@ -37,8 +40,7 @@ function App() {
     }
 
     setTimeout(() => {
-      const botReply = { sender: 'bot', text: reply };
-      const updatedWithReply = [...updated, botReply];
+      const updatedWithReply = [...updated.slice(0, -1), { sender: 'bot', text: reply }];
       saveMessages(updatedWithReply);
       setIsTyping(false);
     }, 1000);
@@ -73,8 +75,58 @@ function App() {
               <strong>{msg.sender === 'user' ? 'You' : '🤖 FoundryBot'}:</strong> {msg.text}
             </div>
           ))}
-          {isTyping && (
-            <div
-              style={{
-                backgroundColor: '#eee',
-                p
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Input */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Type your message..."
+            rows={2}
+            style={{
+              flex: 1,
+              padding: '10px',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              fontSize: '14px',
+              resize: 'none',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            type="button"
+            style={{
+              backgroundColor: '#000',
+              color: '#fff',
+              padding: '10px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            Send
+          </button>
+        </div>
+      </div>
+
+      {/* Canvas Area */}
+      <div style={{ flexGrow: 1, backgroundColor: '#fff', padding: '40px', overflowY: 'auto' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>Canvas Area</h1>
+        <p style={{ fontSize: '16px', lineHeight: '1.7', color: '#444' }}>
+          This is your interactive canvas. The chat stays active on the left while this area can display tools, forms, content, code previews or AI results.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default App;
