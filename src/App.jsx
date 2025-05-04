@@ -47,7 +47,7 @@ function App() {
           borderRadius: '10px',
           border: '1px solid #ccc',
           maxWidth: '700px',
-          whiteSpace: 'pre-wrap',
+          whiteSpace: 'pre-line',
           wordBreak: 'break-word',
           overflowWrap: 'break-word',
           lineHeight: '1.6',
