@@ -1,46 +1,51 @@
 export default async function handler(req, res) {
-  try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
-    }
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
+  try {
     const { prompt } = req.body;
+
     if (!prompt) {
-      return res.status(400).json({ error: 'No prompt provided' });
+      return res.status(400).json({ error: 'Missing prompt' });
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
+
     if (!apiKey) {
       return res.status(500).json({ error: 'Missing OpenAI API key' });
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const completion = await fetch("https://api.openai.com/v1/chat/completions", {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          { role: 'system', content: 'You are FoundryBot, a helpful assistant for building businesses.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+        max_tokens: 500
       })
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      return res.status(500).json({ error: 'OpenAI API error', details: err });
+    const data = await completion.json();
+
+    if (data.error) {
+      console.error("OpenAI error:", data.error);
+      return res.status(500).json({ error: 'Error from OpenAI API' });
     }
 
-    const result = await response.json();
-    const reply = result.choices?.[0]?.message?.content?.trim() || "🤖 Couldn't generate a response.";
+    const reply = data.choices?.[0]?.message?.content?.trim();
 
-    return res.status(200).json({ reply });
-  } catch (error) {
-    console.error('API error:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(200).json({
+      reply,
+      canvas: `<div><strong>🛠️ AI Suggestion:</strong><br/>${reply}</div>`
+    });
+
+  } catch (err) {
+    console.error("Handler error:", err);
+    return res.status(500).json({ error: 'Server error' });
   }
 }
