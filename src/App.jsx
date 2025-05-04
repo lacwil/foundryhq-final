@@ -38,7 +38,7 @@ function App() {
       {/* Sidebar Chat */}
       <div
         style={{
-          width: '340px',
+          width: '360px',
           borderRight: '1px solid #ddd',
           backgroundColor: '#f9f9f9',
           display: 'flex',
@@ -56,6 +56,7 @@ function App() {
             flexDirection: 'column',
             gap: '12px',
             paddingRight: '4px',
+            marginBottom: '12px',
           }}
         >
           {messages.map((msg, idx) => (
@@ -77,7 +78,7 @@ function App() {
           <div ref={chatEndRef} />
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -107,13 +108,24 @@ function App() {
         </div>
       </div>
 
-      {/* Canvas / Main Content Area */}
+      {/* Main Canvas Area */}
       <div
         style={{
           flexGrow: 1,
-          backgroundColor: '#ffffff',
+          backgroundColor: '#fff',
           padding: '40px',
           overflowY: 'auto',
         }}
       >
-        <
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
+          Canvas Area
+        </h1>
+        <p style={{ fontSize: '16px', lineHeight: '1.7', color: '#444' }}>
+          This is your interactive canvas. The chat stays active on the left while this area can display tools, forms, content, code previews or AI results.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default App;
