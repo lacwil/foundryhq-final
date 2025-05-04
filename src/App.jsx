@@ -1,11 +1,10 @@
-import ChatCanvas from './components/ChatCanvas';
+// src/App.jsx
+
+import React from 'react';
+import FoundryBotCanvas from './pages/FoundryBotCanvas';
 
 function App() {
-  return (
-    <div className="h-screen w-screen overflow-hidden bg-gray-100 text-gray-900">
-      <ChatCanvas />
-    </div>
-  );
+  return <FoundryBotCanvas />;
 }
 
 export default App;
