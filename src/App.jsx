@@ -44,39 +44,46 @@ function App() {
     setMessages(msgs);
     const lastBotMsg = [...msgs].reverse().find(m => m.sender === 'bot' && m.canvas);
     if (lastBotMsg) setCanvasContent(lastBotMsg.canvas);
+
+    if (msgs.length === 0) {
+      const firstPrompt = funnelPrompt('ask_business_type', '');
+      const botMsg = { sender: 'bot', text: firstPrompt };
+      const initialMessages = [botMsg];
+      saveMessages(initialMessages);
+    }
   }, [selectedProject]);
 
   const funnelPrompt = (stage, userInput) => {
     switch (stage) {
       case 'ask_business_type':
         setStage('refine_goal');
-        return `The user is starting a new business. Ask: "What is your newest empire going to be?" Then help them clarify their answer. They said: "${userInput}". Now ask: "What does success look like for this empire?"`;
+        return `What is your newest empire going to be?`;
       case 'refine_goal':
         setStage('research_niche');
-        return `The user described their goal: "${userInput}". Now ask: "Would you like help identifying trending niches or high-profit opportunities for this business?"`;
+        return `What does success look like for this empire?`;
       case 'research_niche':
         setStage('build_plan');
-        return `Based on their interest: "${userInput}", offer to begin outlining a business plan. Ask: "Shall I generate a simple business plan with steps to launch?"`;
+        return `Would you like help identifying trending niches or high-profit opportunities for this business?`;
       case 'build_plan':
         setStage('generate_name');
-        return `Based on the business type and goals: "${userInput}", suggest 3–5 brand name ideas. Ask: "Which name do you like best?"`;
+        return `Shall I generate a simple business plan with steps to launch?`;
       case 'generate_name':
         setStage('check_domain');
-        return `Check if "${userInput}" is available as a .com domain. If not, suggest alternatives. Ask: "Shall we reserve the domain now?"`;
+        return `Which of these names do you like best, or do you have one already?`;
       case 'check_domain':
         setStage('design_logo');
-        return `Ask: "What logo style fits your brand best — clean, bold, minimalist, playful, or luxury?" Then prepare logo concepts for "${userInput}".`;
+        return `Shall we check if your preferred domain is available and suggest alternatives?`;
       case 'design_logo':
         setStage('build_website');
-        return `Using the brand name and logo direction: "${userInput}", generate a homepage layout. Ask: "Want to preview the homepage live or edit it first?"`;
+        return `What logo style fits your brand best — clean, bold, minimalist, playful, or luxury?`;
       case 'build_website':
         setStage('launch_ready');
-        return `Confirm setup: domain, Stripe, product sourcing, email, and hosting for "${userInput}". Ask: "Ready to launch this business?"`;
+        return `Want to preview the homepage live or edit it first?`;
       case 'launch_ready':
         setStage('ai_marketing');
-        return `Now that "${userInput}" is ready, suggest AI-powered marketing: a Facebook ad, email sequence, TikTok hook, and influencer outreach script.`;
+        return `Ready to launch this business? I can walk you through domain, Stripe, email, hosting setup.`;
       case 'ai_marketing':
-        return `Keep supporting business growth for "${userInput}" with ongoing campaign ideas, partnerships, and SEO tips.`;
+        return `Let’s generate a Facebook ad, email welcome flow, and influencer outreach for your brand.`;
       default:
         return `The user said: "${userInput}". Continue guiding them through building: "${selectedProject}".`;
     }
