@@ -60,160 +60,31 @@ function App() {
         return `What is your newest empire going to be?`;
       case 'refine_goal':
         setStage('research_niche');
-        return `What does success look like for this empire?`;
+        return `The user wants to start: "${userInput}". Ask: What does success look like to you for this business idea? Focus on real-world business goals like revenue, freedom, impact, etc.`;
       case 'research_niche':
         setStage('build_plan');
-        return `Would you like help identifying trending niches or high-profit opportunities for this business?`;
+        return `The business idea is: "${userInput}". Ask: Would you like help identifying trending niches, suppliers, or best-selling products in this space?`;
       case 'build_plan':
         setStage('generate_name');
-        return `Shall I generate a simple business plan with steps to launch?`;
+        return `The business context is: "${userInput}". Ask: Shall I help generate a simple business plan with goals, steps, and monetization ideas?`;
       case 'generate_name':
         setStage('check_domain');
-        return `Which of these names do you like best, or do you have one already?`;
+        return `Let’s brainstorm brand names for: "${userInput}". Suggest 3–5 and ask the user to pick one or modify.`;
       case 'check_domain':
         setStage('design_logo');
-        return `Shall we check if your preferred domain is available and suggest alternatives?`;
+        return `Check if "${userInput}" is available as a domain. Suggest .coms and close alternatives.`;
       case 'design_logo':
         setStage('build_website');
-        return `What logo style fits your brand best — clean, bold, minimalist, playful, or luxury?`;
+        return `For the brand "${userInput}", suggest 2–3 logo styles (modern, luxury, bold, minimalist). Ask which one they prefer.`;
       case 'build_website':
         setStage('launch_ready');
-        return `Want to preview the homepage live or edit it first?`;
+        return `Let’s draft a homepage layout for "${userInput}". Ask: Would you like to preview or tweak it first?`;
       case 'launch_ready':
         setStage('ai_marketing');
-        return `Ready to launch this business? I can walk you through domain, Stripe, email, hosting setup.`;
+        return `Confirm launch checklist for "${userInput}": domain, hosting, email, Stripe, suppliers. Ask: Ready to go live?`;
       case 'ai_marketing':
-        return `Let’s generate a Facebook ad, email welcome flow, and influencer outreach for your brand.`;
+        return `Now that "${userInput}" is live, let’s generate a Facebook ad, welcome email, and launch post to promote it.`;
       default:
         return `The user said: "${userInput}". Continue guiding them through building: "${selectedProject}".`;
     }
   };
-
-  const handleSend = async () => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
-
-    const userMessage = { sender: 'user', text: trimmed };
-    const typingMsg = { sender: 'bot', text: 'FoundryBot is typing...' };
-    const updated = [...messages, userMessage, typingMsg];
-    saveMessages(updated);
-    setInput('');
-    setIsTyping(true);
-
-    try {
-      const stage = getStage();
-      const stagePrompt = funnelPrompt(stage, trimmed);
-
-      const response = await fetch('http://localhost:3001/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: stagePrompt })
-      });
-
-      const data = await response.json();
-      const reply = data.reply || "🧠 Couldn't generate a response.";
-      const canvas = data.canvas || '';
-
-      const botReply = { sender: 'bot', text: reply };
-      if (canvas) {
-        botReply.canvas = canvas;
-        setCanvasContent(canvas);
-      }
-
-      const updatedWithReply = [...updated.slice(0, -1), botReply];
-      saveMessages(updatedWithReply);
-    } catch (err) {
-      const errorReply = { sender: 'bot', text: '❌ Failed to fetch AI response.' };
-      const updatedWithError = [...updated.slice(0, -1), errorReply];
-      saveMessages(updatedWithError);
-    }
-
-    setIsTyping(false);
-  };
-
-  const createNewProject = () => {
-    const name = prompt('Enter new project name:');
-    if (!name) return;
-    if (projects.includes(name)) return alert('Project already exists.');
-    setProjects([...projects, name]);
-    setSelectedProject(name);
-    localStorage.setItem(getStorageKey(name), JSON.stringify([]));
-    localStorage.setItem(getStageKey(name), 'ask_business_type');
-  };
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
-
-  return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      {/* Sidebar */}
-      <div style={{ width: '360px', borderRight: '1px solid #ddd', background: '#f9f9f9', padding: 20, display: 'flex', flexDirection: 'column' }}>
-        <h2>FoundryBot</h2>
-
-        <div style={{ display: 'flex', marginBottom: 10, gap: 8 }}>
-          <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={{ flex: 1, padding: '6px' }}>
-            {projects.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-          <button onClick={createNewProject} style={{ padding: '6px 10px' }}>＋</button>
-        </div>
-
-        <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: 10 }}>
-          {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              style={{
-                backgroundColor: msg.sender === 'user' ? '#d9fdd3' : '#fff',
-                padding: 10,
-                borderRadius: 8,
-                marginBottom: 6,
-                whiteSpace: 'pre-line'
-              }}
-            >
-              <strong>{msg.sender === 'user' ? 'You' : '🧠 FoundryBot'}:</strong> {msg.text}
-            </div>
-          ))}
-          {isTyping && <div style={{ fontStyle: 'italic' }}>FoundryBot is typing...</div>}
-          <div ref={chatEndRef} />
-        </div>
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="Type your message..."
-            rows={2}
-            style={{ flex: 1, resize: 'none', padding: 10 }}
-          />
-          <button onClick={handleSend} style={{ padding: '10px 16px', background: '#000', color: '#fff' }}>Send</button>
-        </div>
-      </div>
-
-      {/* Canvas */}
-      <div style={{ flexGrow: 1, padding: 40 }}>
-        <h1>Canvas Area</h1>
-        <p>This is your interactive project area for: <strong>{selectedProject}</strong></p>
-        <div
-          style={{
-            marginTop: 20,
-            padding: 20,
-            border: '1px solid #ddd',
-            borderRadius: 8,
-            background: '#fff'
-          }}
-          dangerouslySetInnerHTML={{ __html: canvasContent }}
-        />
-      </div>
-    </div>
-  );
-}
-
-export default App;
