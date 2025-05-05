@@ -1,45 +1,39 @@
 import express from 'express';
 import cors from 'cors';
-import bodyParser from 'body-parser';
-import 'dotenv/config';
-import { Configuration, OpenAIApi } from 'openai';
+import dotenv from 'dotenv';
+import OpenAI from 'openai';
+
+dotenv.config();
 
 const app = express();
-const port = 3001;
-
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const openai = new OpenAIApi(configuration);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 app.post('/api/generate', async (req, res) => {
-  try {
-    const messages = req.body.messages;
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: 'Invalid request format. "messages" is required.' });
-    }
+  const { messages } = req.body;
 
-    const response = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
+  if (!messages) {
+    return res.status(400).json({ error: 'Messages are required' });
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
       messages,
     });
 
-    const reply = response.data.choices[0].message.content;
+    const reply = response.choices[0].message.content;
 
     res.json({
       reply,
-      canvas: `<div><strong>🛠️ AI Suggestion:</strong><br/>${reply.replace(/\n/g, '<br/>')}</div>`
+      canvas: `<div><strong>🧠 AI Suggestion:</strong><br/>${reply.replace(/\n/g, '<br/>')}</div>`
     });
-  } catch (error) {
-    console.error('OpenAI API error:', error);
-    res.status(500).json({ error: 'Error fetching AI response.' });
+  } catch (err) {
+    console.error('OpenAI API error:', err);
+    res.status(500).json({ error: 'OpenAI API error', details: err.message });
   }
 });
 
-app.listen(port, () => {
-  console.log(`✅ Server running at http://localhost:${port}`);
-});
+app.listen(3001, () => console.log('✅ Server running at http://localhost:3001'));
