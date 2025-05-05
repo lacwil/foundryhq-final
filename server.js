@@ -1,12 +1,13 @@
 import express from 'express';
-import fetch from 'node-fetch';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fetch from 'node-fetch';
 
 dotenv.config();
+
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // 🔥 THIS is what enables JSON body parsing
 
 app.post('/api/generate', async (req, res) => {
   try {
@@ -31,7 +32,11 @@ app.post('/api/generate', async (req, res) => {
     });
 
     const data = await completion.json();
-    if (data.error) return res.status(500).json({ error: 'Error from OpenAI API' });
+
+    if (data.error) {
+      console.error('OpenAI API error:', data.error);
+      return res.status(500).json({ error: 'OpenAI API returned an error.' });
+    }
 
     const reply = data.choices?.[0]?.message?.content?.trim();
     res.json({
@@ -40,11 +45,11 @@ app.post('/api/generate', async (req, res) => {
     });
   } catch (err) {
     console.error('Server error:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error occurred.' });
   }
 });
 
 const PORT = 3001;
 app.listen(PORT, () => {
-  console.log(`API server listening on http://localhost:${PORT}`);
+  console.log(`✅ Server running at http://localhost:${PORT}`);
 });
