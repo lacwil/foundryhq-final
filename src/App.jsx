@@ -33,6 +33,21 @@ function App() {
     localStorage.setItem(getStorageKey(selectedProject), JSON.stringify(msgs));
   };
 
+  useEffect(() => {
+    setProjects(getSavedProjects());
+    const msgs = loadMessages(selectedProject);
+    setMessages(msgs);
+    const lastBotMsg = [...msgs].reverse().find(m => m.sender === 'bot' && m.canvas);
+    if (lastBotMsg) setCanvasContent(lastBotMsg.canvas);
+    if (msgs.length === 0) {
+      const firstPrompt = `🧠 FoundryBot: What is your newest empire going to be?`;
+      const botMsg = { sender: 'bot', text: firstPrompt };
+      const initialMessages = [botMsg];
+      setStage('ask_product_type');
+      saveMessages(initialMessages);
+    }
+  }, [selectedProject]);
+
   const nextStage = (stage) => {
     const stages = [
       'ask_business_type',
@@ -52,47 +67,26 @@ function App() {
     switch (stage) {
       case 'ask_business_type':
         return `The user wants to start a new business empire called "${project}". Ask what kind of business this will be.`;
-
       case 'ask_product_type':
         return `The user said: "${userInput}". Ask what products or services this business will offer.`;
-
       case 'ask_target_customer':
         return `The user said: "${userInput}". Ask who the ideal customer is and what problem the product solves.`;
-
       case 'ask_supplier_help':
         return `The user said: "${userInput}". Ask if they want help finding suppliers, sourcing products, or tools to build the store.`;
-
       case 'ask_platform':
         return `The user said: "${userInput}". Recommend 2–3 platforms to sell on (e.g., Shopify, Etsy, Amazon). Ask which one they prefer.`;
-
       case 'ask_brand':
         return `The user said: "${userInput}". Ask what style or brand tone they envision: luxury, modern, fun, minimal, etc.`;
-
       case 'build_name':
         return `The user said: "${userInput}". Based on that, suggest 3–5 business names. Ask them to choose one or modify.`;
-
       case 'next_steps':
         return `The user said: "${userInput}". Summarize the current business setup and ask if they're ready to move to logo design, domain setup, and launch.`;
-
+      case 'done':
+        return `The user said: "${userInput}". Ask: Would you like to revisit or improve any part of your empire before launching?`;
       default:
-        return `The user said: "${userInput}". Continue helping build their "${project}" empire.`;
+        return `The user said: "${userInput}". Let's keep building their "${project}" empire.`;
     }
   };
-
-  useEffect(() => {
-    setProjects(getSavedProjects());
-    const msgs = loadMessages(selectedProject);
-    setMessages(msgs);
-    const lastBotMsg = [...msgs].reverse().find(m => m.sender === 'bot' && m.canvas);
-    if (lastBotMsg) setCanvasContent(lastBotMsg.canvas);
-    if (msgs.length === 0) {
-      const firstPrompt = `🧠 FoundryBot: What is your newest empire going to be?`;
-      const botMsg = { sender: 'bot', text: firstPrompt };
-      const initialMessages = [botMsg];
-      setStage('ask_product_type');
-      saveMessages(initialMessages);
-    }
-  }, [selectedProject]);
 
   return (
     <div className="app">
@@ -107,9 +101,7 @@ function App() {
         </select>
         <div className="chat-box">
           {messages.map((msg, idx) => (
-            <div key={idx} className={`message ${msg.sender}`}>
-              {msg.sender === 'user' ? `You: ${msg.text}` : msg.text}
-            </div>
+            <div key={idx} className={`message ${msg.sender}`}>{msg.sender === 'user' ? `You: ${msg.text}` : msg.text}</div>
           ))}
           {isTyping && <div className="message bot">🧠 FoundryBot is thinking…</div>}
           <div ref={chatEndRef} />
@@ -134,7 +126,6 @@ function App() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })
               });
-
               const data = await res.json();
               const botText = `🧠 FoundryBot: ${data.response}`;
               const botMsg = { sender: 'bot', text: botText, canvas: data.response };
