@@ -6,11 +6,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const DEFAULT_PROJECT = 'Default Project';
-const DASHBOARD_PROJECTS = ['Default Project', 'My Website', 'Fitness App'];
 
 function App() {
   const [input, setInput] = useState('');
   const [selectedProject, setSelectedProject] = useState(DEFAULT_PROJECT);
+  const [projects, setProjects] = useState([]);
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [canvasContent, setCanvasContent] = useState('');
@@ -18,6 +18,12 @@ function App() {
   const chatEndRef = useRef(null);
 
   const getStorageKey = (project) => `foundry_chat_${project}`;
+
+  const getSavedProjects = () => {
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('foundry_chat_'));
+    const base = keys.map(k => k.replace('foundry_chat_', ''));
+    return [...new Set([DEFAULT_PROJECT, ...base])];
+  };
 
   const loadMessages = (project) => {
     const saved = localStorage.getItem(getStorageKey(project));
@@ -30,6 +36,7 @@ function App() {
   };
 
   useEffect(() => {
+    setProjects(getSavedProjects());
     const msgs = loadMessages(selectedProject);
     setMessages(msgs);
     const lastBotMsg = [...msgs].reverse().find(m => m.sender === 'bot' && m.canvas);
@@ -88,7 +95,7 @@ function App() {
 
         <div style={{ marginBottom: 10 }}>
           <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={{ width: '100%', padding: '6px' }}>
-            {DASHBOARD_PROJECTS.map((p) => (
+            {projects.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
