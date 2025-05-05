@@ -88,3 +88,5 @@ function App() {
         return `The user said: "${userInput}". Continue guiding them through building: "${selectedProject}".`;
     }
   };
+
+export default App;
