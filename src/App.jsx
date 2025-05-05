@@ -2,6 +2,7 @@
 // 1. Use OpenAI API to generate responses and canvas output dynamically
 // 2. Save chat history per project in localStorage
 // 3. Inject results into canvas area based on AI reply
+// 4. Add "New Project" button to start a fresh one on the fly
 
 import React, { useState, useEffect, useRef } from 'react';
 
@@ -83,6 +84,15 @@ function App() {
     setIsTyping(false);
   };
 
+  const createNewProject = () => {
+    const name = prompt('Enter new project name:');
+    if (!name) return;
+    if (projects.includes(name)) return alert('Project already exists.');
+    setProjects([...projects, name]);
+    setSelectedProject(name);
+    localStorage.setItem(getStorageKey(name), JSON.stringify([]));
+  };
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
@@ -93,12 +103,13 @@ function App() {
       <div style={{ width: '360px', borderRight: '1px solid #ddd', background: '#f9f9f9', padding: 20, display: 'flex', flexDirection: 'column' }}>
         <h2>FoundryBot</h2>
 
-        <div style={{ marginBottom: 10 }}>
-          <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={{ width: '100%', padding: '6px' }}>
+        <div style={{ display: 'flex', marginBottom: 10, gap: 8 }}>
+          <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={{ flex: 1, padding: '6px' }}>
             {projects.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
+          <button onClick={createNewProject} style={{ padding: '6px 10px' }}>＋</button>
         </div>
 
         <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: 10 }}>
