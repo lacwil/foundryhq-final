@@ -37,137 +37,107 @@ function App() {
     setProjects(getSavedProjects());
     const msgs = loadMessages(selectedProject);
     setMessages(msgs);
-
     const lastBotMsg = [...msgs].reverse().find(m => m.sender === 'bot' && m.canvas);
     if (lastBotMsg) setCanvasContent(lastBotMsg.canvas);
-
     if (msgs.length === 0) {
       const firstPrompt = funnelPrompt('ask_business_type', '');
       const botMsg = { sender: 'bot', text: firstPrompt };
-      saveMessages([botMsg]);
+      const initialMessages = [botMsg];
+      saveMessages(initialMessages);
     }
   }, [selectedProject]);
 
   const funnelPrompt = (stage, userInput) => {
     switch (stage) {
       case 'ask_business_type':
-        setStage('refine_goal');
-        return `What is your newest empire going to be?`;
-
-      case 'refine_goal':
-        setStage('research_niche');
-        return `The user wants to start: "${userInput}". Ask: What does success look like to you for this business idea? Focus on real-world business goals like revenue, freedom, impact, etc.`;
-
-      case 'research_niche':
-        setStage('build_plan');
-        return `The business idea is: "${userInput}". Ask: Would you like help identifying trending niches, suppliers, or best-selling products in this space?`;
-
-      case 'build_plan':
-        setStage('generate_name');
-        return `The business context is: "${userInput}". Ask: Shall I help generate a simple business plan with goals, steps, and monetization ideas?`;
-
-      case 'generate_name':
-        setStage('check_domain');
-        return `Let’s brainstorm brand names for: "${userInput}". Suggest 3–5 and ask the user to pick one or modify.`;
-
-      case 'check_domain':
-        setStage('design_logo');
-        return `Check if "${userInput}" is available as a domain. Suggest .coms and close alternatives.`;
-
-      case 'design_logo':
-        setStage('build_website');
-        return `For the brand "${userInput}", suggest 2–3 logo styles (modern, luxury, bold, minimalist). Ask which one they prefer.`;
-
-      case 'build_website':
-        setStage('launch_ready');
-        return `Let’s draft a homepage layout for "${userInput}". Ask: Would you like to preview or tweak it first?`;
-
-      case 'launch_ready':
-        setStage('ai_marketing');
-        return `Confirm launch checklist for "${userInput}": domain, hosting, email, Stripe, suppliers. Ask: Ready to go live?`;
-
-      case 'ai_marketing':
-        return `Now that "${userInput}" is live, let’s generate a Facebook ad, welcome email, and launch post to promote it.`;
-
+        setStage('ask_product_type');
+        return `🧠 FoundryBot: What is your newest empire going to be?`;
+      case 'ask_product_type':
+        setStage('ask_target_customer');
+        return `Great! What kind of products or services will your business offer?`;
+      case 'ask_target_customer':
+        setStage('ask_supplier_help');
+        return `Who is your ideal customer? (e.g. young professionals, pet owners, gym goers…)`;
+      case 'ask_supplier_help':
+        setStage('ask_platform');
+        return `Would you like help finding suppliers or product sources for your niche?`;
+      case 'ask_platform':
+        setStage('ask_brand');
+        return `Which platform would you like to use to launch? (Shopify, WooCommerce, etc)`;
+      case 'ask_brand':
+        setStage('build_name');
+        return `Shall we brainstorm your brand name next?`;
+      case 'build_name':
+        setStage('next_steps');
+        return `Suggesting brand names now based on: ${userInput}`;
+      case 'next_steps':
+        return `Next we'll check domains, design a logo, and build your site.`;
       default:
-        return `The user said: "${userInput}". Continue guiding them through building: "${selectedProject}".`;
+        return `🧠 FoundryBot: The user said: "${userInput}". Let's keep building their empire.`;
     }
   };
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMsg = { sender: 'user', text: input };
-    const newMessages = [...messages, userMsg];
-    saveMessages(newMessages);
-    setInput('');
-    setIsTyping(true);
-
-    const stage = getStage();
-    const nextPrompt = funnelPrompt(stage, input);
-
-    const botMsg = { sender: 'bot', text: nextPrompt, canvas: `<div><strong>🧠 AI Suggestion:</strong><br/>${nextPrompt}</div>` };
-    const updatedMessages = [...newMessages, botMsg];
-    saveMessages(updatedMessages);
-    setCanvasContent(botMsg.canvas);
-    setIsTyping(false);
-  };
-
-  const handleProjectChange = (e) => {
-    const proj = e.target.value;
-    setSelectedProject(proj);
-  };
-
-  const handleNewProject = () => {
-    const name = prompt('Enter new project name:');
-    if (name && !projects.includes(name)) {
-      const newList = [...projects, name];
-      setProjects(newList);
-      setSelectedProject(name);
-      localStorage.setItem(getStorageKey(name), JSON.stringify([]));
-      localStorage.setItem(getStageKey(name), 'ask_business_type');
-    }
-  };
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: 'sans-serif' }}>
-      <div style={{ width: '30%', padding: '1rem', borderRight: '1px solid #ccc' }}>
+    <div className="app">
+      <div className="sidebar">
         <h2>FoundryBot</h2>
-        <div>
-          <select value={selectedProject} onChange={handleProjectChange}>
-            {projects.map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-          <button onClick={handleNewProject} style={{ marginLeft: '8px' }}>+</button>
-        </div>
-        <div style={{ marginTop: '1rem', overflowY: 'auto', height: '75vh' }}>
-          {messages.map((m, i) => (
-            <div key={i} style={{ background: m.sender === 'user' ? '#d3f9d8' : '#f0f0f0', padding: '0.5rem', margin: '0.5rem 0' }}>
-              <strong>{m.sender === 'user' ? 'You' : '🤖 FoundryBot'}:</strong> {m.text}
-            </div>
+        <select
+          value={selectedProject}
+          onChange={(e) => setSelectedProject(e.target.value)}>
+          {projects.map((p) => (
+            <option key={p} value={p}>{p}</option>
           ))}
+        </select>
+        <div className="chat-box">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`message ${msg.sender}`}>{msg.sender === 'user' ? `You: ${msg.text}` : msg.text}</div>
+          ))}
+          {isTyping && <div className="message bot">🧠 FoundryBot is thinking…</div>}
           <div ref={chatEndRef} />
         </div>
-        <div style={{ display: 'flex', marginTop: '1rem' }}>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!input.trim()) return;
+
+            const newMessages = [...messages, { sender: 'user', text: input }];
+            saveMessages(newMessages);
+            setInput('');
+            setIsTyping(true);
+
+            try {
+              const res = await fetch('http://localhost:3001/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: input }),
+              });
+              const data = await res.json();
+              const botText = funnelPrompt(getStage(), input);
+              const botMsg = { sender: 'bot', text: botText, canvas: data.response };
+              saveMessages([...newMessages, botMsg]);
+              setCanvasContent(data.response);
+            } catch (err) {
+              const errMsg = { sender: 'bot', text: `❌ Failed to fetch AI response.` };
+              saveMessages([...newMessages, errMsg]);
+            }
+            setIsTyping(false);
+          }}>
           <input
+            type="text"
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
-            style={{ flex: 1, padding: '0.5rem' }}
-            onKeyDown={e => e.key === 'Enter' && handleSend()}
           />
-          <button onClick={handleSend} style={{ padding: '0.5rem' }}>Send</button>
-        </div>
+          <button type="submit">Send</button>
+        </form>
       </div>
-      <div style={{ width: '70%', padding: '1rem' }}>
-        <h2>Canvas Area</h2>
+      <div className="canvas">
+        <h1>Canvas Area</h1>
         <p>This is your interactive project area for: <strong>{selectedProject}</strong></p>
-        <div dangerouslySetInnerHTML={{ __html: canvasContent }} />
+        <div className="canvas-content">
+          <strong>🧠 AI Suggestion:</strong>
+          <p>{canvasContent || 'No response.'}</p>
+        </div>
       </div>
     </div>
   );
