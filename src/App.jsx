@@ -1,3 +1,8 @@
+// Plan:
+// 1. Use OpenAI API to generate responses and canvas output dynamically
+// 2. Save chat history per project in localStorage
+// 3. Inject results into canvas area based on AI reply
+
 import React, { useState, useEffect, useRef } from 'react';
 
 const DEFAULT_PROJECT = 'Default Project';
