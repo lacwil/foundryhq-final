@@ -1,31 +1,29 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors';
 import fetch from 'node-fetch';
+import cors from 'cors';
 
 dotenv.config();
-
 const app = express();
+app.use(cors());
+app.use(express.json());
+
 const PORT = 3001;
 
-app.use(cors());
-app.use(express.json()); // ✅ Needed to parse JSON in POST body
-
 app.post('/api/generate', async (req, res) => {
-  const { prompt } = req.body;
+  const { messages } = req.body;
 
-  if (!prompt) {
-    return res.status(400).json({ error: 'Missing prompt' });
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: 'Missing or invalid message history' });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
-
   if (!apiKey) {
     return res.status(500).json({ error: 'Missing OpenAI API key' });
   }
 
   try {
-    const completion = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -33,28 +31,29 @@ app.post('/api/generate', async (req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }],
+        messages,
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 600
       })
     });
 
-    const data = await completion.json();
+    const data = await response.json();
 
     if (data.error) {
-      console.error("OpenAI error:", data.error);
-      return res.status(500).json({ error: 'Error from OpenAI API' });
+      console.error("OpenAI API error:", data.error);
+      return res.status(500).json({ error: 'Error from OpenAI' });
     }
 
     const reply = data.choices?.[0]?.message?.content?.trim();
 
-    return res.status(200).json({
+    return res.json({
       reply,
-      canvas: `<div><strong>🛠️ AI Suggestion:</strong><br/>${reply}</div>`
+      canvas: `<div><strong>🛠️ AI Suggestion:</strong><br/>${reply.replace(/\n/g, '<br/>')}</div>`
     });
-  } catch (err) {
-    console.error("Handler error:", err);
-    return res.status(500).json({ error: 'Server error' });
+
+  } catch (error) {
+    console.error("Server error:", error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
