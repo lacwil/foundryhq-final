@@ -1,225 +1,170 @@
-import React, { useState, useEffect, useRef } from 'react';
-import CanvasDraw from "react-canvas-draw";
+import React, { useRef, useState, useEffect } from 'react';
+import { FaTrash, FaPaintBrush, FaPalette } from 'react-icons/fa';
 
 const DEFAULT_PROJECT = 'Default Project';
 
 function App() {
-  const [input, setInput] = useState('');
-  const [selectedProject, setSelectedProject] = useState(DEFAULT_PROJECT);
-  const [projects, setProjects] = useState([]);
-  const [messages, setMessages] = useState([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [canvasContent, setCanvasContent] = useState('');
-  const [businessPlan, setBusinessPlan] = useState({});
-  const chatEndRef = useRef(null);
   const canvasRef = useRef(null);
-
-  const getStorageKey = (project) => `foundry_chat_${project}`;
-  const getSavedProjects = () => {
-    const keys = Object.keys(localStorage).filter(k => k.startsWith('foundry_chat_'));
-    return [...new Set([DEFAULT_PROJECT, ...keys.map(k => k.replace('foundry_chat_', ''))])];
-  };
-
-  const loadMessages = (project) => {
-    const saved = localStorage.getItem(getStorageKey(project));
-    return saved ? JSON.parse(saved) : [];
-  };
-
-  const saveMessages = (msgs) => {
-    setMessages(msgs);
-    localStorage.setItem(getStorageKey(selectedProject), JSON.stringify(msgs));
-  };
-
-  const resetProject = () => {
-    localStorage.removeItem(getStorageKey(selectedProject));
-    const botMsg = { sender: 'bot', text: `🧠 FoundryBot: What is your newest empire going to be?` };
-    const initialMessages = [botMsg];
-    saveMessages(initialMessages);
-    setCanvasContent('');
-    setBusinessPlan({});
-  };
-
-  const funnelPrompts = [
-    ['idea', 'What is your newest empire going to be?'],
-    ['audience', 'Who is your target audience?'],
-    ['unique', 'What makes your idea unique or different?'],
-    ['platform', 'Would you prefer a website, an app, or both?'],
-    ['tone', 'What brand tone do you want — fun, bold, professional, luxury, etc.?'],
-    ['nameHelp', 'Do you want help with naming your business?'],
-    ['domain', 'Would you like me to check domain name availability?'],
-    ['logo', 'Would you like help designing a logo?'],
-    ['marketing', 'Do you want help with marketing strategies?'],
-    ['tech', 'Do you want help with tech setup (email, payments, etc.)?'],
-    ['buildType', 'Do you want a lightweight startup kit or a full build with automation and AI features?'],
-    ['hosting', 'Would you like to begin setting up your domain and hosting?']
-  ];
-
-  const getNextPromptKey = (currentPlan) => {
-    return funnelPrompts.find(([key]) => !currentPlan[key]);
-  };
-
-  const formatBusinessPlan = (plan) => {
-    return `
-      <h2>🧠 Business Blueprint</h2>
-      <ul>
-        ${Object.entries(plan).map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`).join('')}
-      </ul>
-    `;
-  };
-
-  const checkDomainAvailability = async () => {
-    const query = businessPlan.nameHelp || businessPlan.idea || '';
-    if (!query) return alert('No business name or idea found.');
-    try {
-      const res = await fetch(`/api/domain-check?query=${query}`);
-      const data = await res.json();
-      const results = data?.results || [];
-      const domains = results.map(r => `${r.domain}: ${r.availability}`).join('<br/>');
-      const msg = { sender: 'bot', text: `🧠 FoundryBot: Here are domain results:<br/>${domains}`, canvas: canvasContent };
-      const updatedMessages = [...messages, msg];
-      saveMessages(updatedMessages);
-    } catch (err) {
-      alert('Failed to check domain availability.');
-    }
-  };
+  const ctxRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [brushColor, setBrushColor] = useState('#000000');
+  const [brushSize, setBrushSize] = useState(4);
+  const [selectedProject, setSelectedProject] = useState(DEFAULT_PROJECT);
+  const [projects, setProjects] = useState([DEFAULT_PROJECT]);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const chatEndRef = useRef(null);
 
   useEffect(() => {
-    setProjects(getSavedProjects());
-    const msgs = loadMessages(selectedProject);
-    setMessages(msgs);
-    const lastBotMsg = [...msgs].reverse().find(m => m.sender === 'bot' && m.canvas);
-    if (lastBotMsg) setCanvasContent(lastBotMsg.canvas);
-    if (msgs.length === 0) {
-      const botMsg = { sender: 'bot', text: `🧠 FoundryBot: What is your newest empire going to be?` };
-      saveMessages([botMsg]);
-    }
-  }, [selectedProject]);
+    const canvas = canvasRef.current;
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = brushColor;
+    ctx.lineWidth = brushSize;
+    ctxRef.current = ctx;
+  }, [brushColor, brushSize]);
+
+  const startDrawing = ({ nativeEvent }) => {
+    const { offsetX, offsetY } = nativeEvent;
+    ctxRef.current.beginPath();
+    ctxRef.current.moveTo(offsetX, offsetY);
+    setIsDrawing(true);
+  };
+
+  const finishDrawing = () => {
+    ctxRef.current.closePath();
+    setIsDrawing(false);
+  };
+
+  const draw = ({ nativeEvent }) => {
+    if (!isDrawing) return;
+    const { offsetX, offsetY } = nativeEvent;
+    ctxRef.current.lineTo(offsetX, offsetY);
+    ctxRef.current.stroke();
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const handleSend = (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    const newMessages = [...messages, { sender: 'user', text: input }];
+    setMessages(newMessages);
+    setInput('');
+    setTimeout(() => {
+      const botMsg = {
+        sender: 'bot',
+        text: `🧠 FoundryBot: You said "${input}". Let's build on that.`
+      };
+      setMessages(prev => [...prev, botMsg]);
+    }, 500);
+  };
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+  }, [messages]);
 
   return (
-    <div className="app" style={{ display: 'flex', height: '100vh' }}>
-      <div className="sidebar" style={{ width: '300px', overflow: 'auto', borderRight: '1px solid #ccc', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', height: '100vh' }}>
+      <div style={{ width: '300px', borderRight: '1px solid #ccc', padding: '10px', display: 'flex', flexDirection: 'column' }}>
         <h2>FoundryBot</h2>
         <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
-          {projects.map((p) => (
-            <option key={p} value={p}>{p}</option>
+          {projects.map((proj, idx) => (
+            <option key={idx}>{proj}</option>
           ))}
         </select>
-        <button onClick={resetProject}>+ New Project</button>
-        <div className="chat-box" style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+        <button onClick={() => setMessages([])}>+ New Project</button>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
           {messages.map((msg, idx) => (
-            <div key={idx} className={`message ${msg.sender}`}>{msg.sender === 'user' ? `You: ${msg.text}` : <span dangerouslySetInnerHTML={{ __html: msg.text }} />}</div>
+            <div key={idx} style={{ background: msg.sender === 'bot' ? '#e0e0ff' : '#d0ffd0', margin: '5px', padding: '8px', borderRadius: '5px' }}>
+              {msg.sender === 'bot' ? msg.text : `You: ${msg.text}`}
+            </div>
           ))}
-          {isTyping && <div className="message bot">🧠 FoundryBot is thinking…</div>}
           <div ref={chatEndRef} />
         </div>
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!input.trim()) return;
-            const newMessages = [...messages, { sender: 'user', text: input }];
-            saveMessages(newMessages);
-            setInput('');
-            setIsTyping(true);
-
-            const currentKey = getNextPromptKey(businessPlan)?.[0];
-            const newPlan = { ...businessPlan, [currentKey]: input };
-            setBusinessPlan(newPlan);
-            setCanvasContent(formatBusinessPlan(newPlan));
-
-            try {
-              const res = await fetch('/api/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  messages: [
-                    { role: 'system', content: 'You are FoundryBot, a helpful assistant.' },
-                    ...newMessages.map(m => ({
-                      role: m.sender === 'user' ? 'user' : 'assistant',
-                      content: m.text
-                    }))
-                  ]
-                })
-              });
-
-              const data = await res.json();
-              const botMsg = {
-                sender: 'bot',
-                text: `🧠 FoundryBot: ${data.reply}`,
-                canvas: data.canvas || formatBusinessPlan(newPlan)
-              };
-
-              const updatedMsgs = [...newMessages, botMsg];
-              saveMessages(updatedMsgs);
-              setCanvasContent(data.canvas || formatBusinessPlan(newPlan));
-            } catch (error) {
-              const errMsg = { sender: 'bot', text: `🧠 FoundryBot: Sorry, something went wrong.` };
-              saveMessages([...newMessages, errMsg]);
-            } finally {
-              setIsTyping(false);
-            }
-          }}>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            style={{ flex: 1 }}
-          />
+        <form onSubmit={handleSend} style={{ display: 'flex', gap: '5px' }}>
+          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} style={{ flex: 1 }} placeholder="Type your message..." />
           <button type="submit">Send</button>
         </form>
       </div>
-      <div className="canvas" style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        <h1>Canvas Area</h1>
-        <p>This is your interactive project area for: <strong>{selectedProject}</strong></p>
-        <div className="canvas-content" style={{ marginBottom: '20px' }}>
-          <strong>🧠 AI Suggestion:</strong>
-          <div dangerouslySetInnerHTML={{ __html: canvasContent || 'No response yet.' }} />
-        </div>
-        <CanvasDraw
+
+      <div style={{ flex: 1, position: 'relative' }}>
+        <canvas
           ref={canvasRef}
-          canvasWidth={800}
-          canvasHeight={400}
-          lazyRadius={1}
-          brushRadius={2}
-          hideGrid={true}
+          style={{ width: '100%', height: '100%', display: 'block', cursor: 'crosshair' }}
+          onMouseDown={startDrawing}
+          onMouseUp={finishDrawing}
+          onMouseMove={draw}
+          onMouseLeave={finishDrawing}
         />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '20px',
-            right: '20px',
-            background: '#f0f0f0',
-            borderRadius: '10px',
-            padding: '10px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            zIndex: 10
-          }}
-        >
-          <button onClick={() => canvasRef.current.undo()} style={{ padding: '6px 10px' }}>
-            Undo
+
+        <div style={{
+          position: 'absolute',
+          bottom: '30px',
+          right: '30px',
+          width: '140px',
+          height: '140px',
+          borderRadius: '50%',
+          background: '#ffffff',
+          boxShadow: '0 0 12px rgba(0, 0, 0, 0.2)',
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px'
+        }}>
+          <button
+            onClick={clearCanvas}
+            title="Clear Canvas"
+            style={{
+              background: '#000',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <FaTrash />
           </button>
-          <button onClick={() => canvasRef.current.clear()} style={{ padding: '6px 10px' }}>
-            Clear
-          </button>
-          <label style={{ fontSize: '14px' }}>
-            🖌️
+
+          <label title="Brush Color">
+            <FaPalette style={{ fontSize: '18px', marginBottom: '4px' }} />
+            <input
+              type="color"
+              value={brushColor}
+              onChange={(e) => setBrushColor(e.target.value)}
+              style={{
+                width: '40px',
+                height: '40px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer'
+              }}
+            />
+          </label>
+
+          <label title="Brush Size" style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
+            <FaPaintBrush style={{ fontSize: '18px' }} />
             <input
               type="range"
               min="1"
-              max="10"
-              defaultValue="2"
-              onChange={(e) => (canvasRef.current.brushRadius = parseInt(e.target.value))}
-              style={{ marginLeft: '5px' }}
+              max="20"
+              value={brushSize}
+              onChange={(e) => setBrushSize(parseInt(e.target.value))}
+              style={{ width: '60px' }}
             />
           </label>
-          <button onClick={checkDomainAvailability} style={{ padding: '6px 10px' }}>Check Domain</button>
         </div>
       </div>
     </div>
