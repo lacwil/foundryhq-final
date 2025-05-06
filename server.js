@@ -1,39 +1,56 @@
 import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
-import OpenAI from 'openai';
+import cors from 'cors';
+import { OpenAI } from 'openai';
 
 dotenv.config();
 
 const app = express();
+const port = 3001;
+
 app.use(cors());
 app.use(express.json());
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 app.post('/api/generate', async (req, res) => {
-  const { messages } = req.body;
-
-  if (!messages) {
-    return res.status(400).json({ error: 'Messages are required' });
-  }
-
   try {
-    const response = await openai.chat.completions.create({
+    const { messages } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'Missing or invalid message history' });
+    }
+
+    const fullMessages = [
+      {
+        role: 'system',
+        content:
+          "You are FoundryBot, a helpful AI co-founder that guides users step-by-step through building a business. Ask one question at a time and build toward delivering a complete, launch-ready business. Be helpful, conversational, and strategic."
+      },
+      ...messages
+    ];
+
+    const completion = await openai.chat.completions.create({
       model: 'gpt-4',
-      messages,
+      messages: fullMessages,
+      temperature: 0.7,
+      max_tokens: 600
     });
 
-    const reply = response.choices[0].message.content;
+    const reply = completion.choices[0].message.content.trim();
 
-    res.json({
+    return res.status(200).json({
       reply,
-      canvas: `<div><strong>🧠 AI Suggestion:</strong><br/>${reply.replace(/\n/g, '<br/>')}</div>`
+      canvas: `<div><strong>🧠 AI Suggestion:</strong><br/>${reply}</div>`
     });
   } catch (err) {
     console.error('OpenAI API error:', err);
-    res.status(500).json({ error: 'OpenAI API error', details: err.message });
+    return res.status(500).json({ error: 'Failed to generate AI response.' });
   }
 });
 
-app.listen(3001, () => console.log('✅ Server running at http://localhost:3001'));
+app.listen(port, () => {
+  console.log(`✅ Server running at http://localhost:${port}`);
+});
