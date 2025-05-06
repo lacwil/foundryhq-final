@@ -12,11 +12,9 @@ function App() {
   const chatEndRef = useRef(null);
 
   const getStorageKey = (project) => `foundry_chat_${project}`;
-
   const getSavedProjects = () => {
     const keys = Object.keys(localStorage).filter(k => k.startsWith('foundry_chat_'));
-    const base = keys.map(k => k.replace('foundry_chat_', ''));
-    return [...new Set([DEFAULT_PROJECT, ...base])];
+    return [...new Set([DEFAULT_PROJECT, ...keys.map(k => k.replace('foundry_chat_', ''))])];
   };
 
   const loadMessages = (project) => {
@@ -29,6 +27,33 @@ function App() {
     localStorage.setItem(getStorageKey(selectedProject), JSON.stringify(msgs));
   };
 
+  const resetProject = () => {
+    localStorage.removeItem(getStorageKey(selectedProject));
+    const botMsg = { sender: 'bot', text: `🧠 FoundryBot: What is your newest empire going to be?` };
+    const initialMessages = [botMsg];
+    saveMessages(initialMessages);
+    setCanvasContent('');
+  };
+
+  const funnelQuestions = [
+    'Who is your target audience?',
+    'What makes your idea unique or different?',
+    'Would you prefer a website, an app, or both?',
+    'What brand tone do you want — fun, bold, professional, luxury, etc.?',
+    'Do you want help with naming your business?',
+    'Would you like me to check domain name availability?',
+    'Would you like help designing a logo?',
+    'Do you want help with marketing strategies?',
+    'Do you want help with tech setup (email, payments, etc.)?',
+    'Do you want a lightweight startup kit or a full build with automation and AI features?',
+    'Would you like to begin setting up your domain and hosting?'
+  ];
+
+  const getNextStagePrompt = (messages) => {
+    const answered = messages.filter(m => m.sender === 'user').length - 1;
+    return funnelQuestions[answered] || null;
+  };
+
   useEffect(() => {
     setProjects(getSavedProjects());
     const msgs = loadMessages(selectedProject);
@@ -37,22 +62,24 @@ function App() {
     if (lastBotMsg) setCanvasContent(lastBotMsg.canvas);
     if (msgs.length === 0) {
       const botMsg = { sender: 'bot', text: `🧠 FoundryBot: What is your newest empire going to be?` };
-      const initialMessages = [botMsg];
-      saveMessages(initialMessages);
+      saveMessages([botMsg]);
     }
   }, [selectedProject]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   return (
     <div className="app">
       <div className="sidebar">
         <h2>FoundryBot</h2>
-        <select
-          value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value)}>
+        <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
           {projects.map((p) => (
             <option key={p} value={p}>{p}</option>
           ))}
         </select>
+        <button onClick={resetProject}>+ New Project</button>
         <div className="chat-box">
           {messages.map((msg, idx) => (
             <div key={idx} className={`message ${msg.sender}`}>{msg.sender === 'user' ? `You: ${msg.text}` : msg.text}</div>
@@ -64,14 +91,14 @@ function App() {
           onSubmit={async (e) => {
             e.preventDefault();
             if (!input.trim()) return;
-
             const newMessages = [...messages, { sender: 'user', text: input }];
             saveMessages(newMessages);
             setInput('');
             setIsTyping(true);
-
-            const chatHistory = newMessages.map((m) => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text.replace('🧠 FoundryBot: ', '') }));
-
+            const chatHistory = newMessages.map((m) => ({
+              role: m.sender === 'user' ? 'user' : 'assistant',
+              content: m.text.replace('🧠 FoundryBot: ', '')
+            }));
             try {
               const res = await fetch('http://localhost:3001/api/generate', {
                 method: 'POST',
@@ -81,8 +108,15 @@ function App() {
               const data = await res.json();
               const botText = `🧠 FoundryBot: ${data.reply}`;
               const botMsg = { sender: 'bot', text: botText, canvas: data.canvas };
-              saveMessages([...newMessages, botMsg]);
+              const finalMsgs = [...newMessages, botMsg];
+              saveMessages(finalMsgs);
               setCanvasContent(data.canvas);
+
+              const nextPrompt = getNextStagePrompt(finalMsgs);
+              if (nextPrompt) {
+                const nextMsg = { sender: 'bot', text: `🧠 FoundryBot: ${nextPrompt}` };
+                saveMessages([...finalMsgs, nextMsg]);
+              }
             } catch (err) {
               const errMsg = { sender: 'bot', text: `❌ Failed to fetch AI response.` };
               saveMessages([...newMessages, errMsg]);
@@ -103,7 +137,7 @@ function App() {
         <p>This is your interactive project area for: <strong>{selectedProject}</strong></p>
         <div className="canvas-content">
           <strong>🧠 AI Suggestion:</strong>
-          <p>{canvasContent || 'No response.'}</p>
+          <div dangerouslySetInnerHTML={{ __html: canvasContent || 'No response yet.' }} />
         </div>
       </div>
     </div>
