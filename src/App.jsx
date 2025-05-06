@@ -67,6 +67,22 @@ function App() {
     `;
   };
 
+  const checkDomainAvailability = async () => {
+    const query = businessPlan.nameHelp || businessPlan.idea || '';
+    if (!query) return alert('No business name or idea found.');
+    try {
+      const res = await fetch(`/api/domain-check?query=${query}`);
+      const data = await res.json();
+      const results = data?.results || [];
+      const domains = results.map(r => `${r.domain}: ${r.availability}`).join('<br/>');
+      const msg = { sender: 'bot', text: `🧠 FoundryBot: Here are domain results:<br/>${domains}`, canvas: canvasContent };
+      const updatedMessages = [...messages, msg];
+      saveMessages(updatedMessages);
+    } catch (err) {
+      alert('Failed to check domain availability.');
+    }
+  };
+
   useEffect(() => {
     setProjects(getSavedProjects());
     const msgs = loadMessages(selectedProject);
@@ -95,7 +111,7 @@ function App() {
         <button onClick={resetProject}>+ New Project</button>
         <div className="chat-box" style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
           {messages.map((msg, idx) => (
-            <div key={idx} className={`message ${msg.sender}`}>{msg.sender === 'user' ? `You: ${msg.text}` : msg.text}</div>
+            <div key={idx} className={`message ${msg.sender}`}>{msg.sender === 'user' ? `You: ${msg.text}` : <span dangerouslySetInnerHTML={{ __html: msg.text }} />}</div>
           ))}
           {isTyping && <div className="message bot">🧠 FoundryBot is thinking…</div>}
           <div ref={chatEndRef} />
@@ -110,18 +126,41 @@ function App() {
             setIsTyping(true);
 
             const currentKey = getNextPromptKey(businessPlan)?.[0];
-            if (currentKey) setBusinessPlan({ ...businessPlan, [currentKey]: input });
             const newPlan = { ...businessPlan, [currentKey]: input };
             setBusinessPlan(newPlan);
             setCanvasContent(formatBusinessPlan(newPlan));
 
-            const nextPrompt = getNextPromptKey(newPlan)?.[1];
-            const botMsg = nextPrompt
-              ? { sender: 'bot', text: `🧠 FoundryBot: ${nextPrompt}`, canvas: formatBusinessPlan(newPlan) }
-              : { sender: 'bot', text: `🧠 FoundryBot: That's your full plan! Ready to deploy!`, canvas: formatBusinessPlan(newPlan) };
-            const finalMsgs = [...newMessages, botMsg];
-            saveMessages(finalMsgs);
-            setIsTyping(false);
+            try {
+              const res = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  messages: [
+                    { role: 'system', content: 'You are FoundryBot, a helpful assistant.' },
+                    ...newMessages.map(m => ({
+                      role: m.sender === 'user' ? 'user' : 'assistant',
+                      content: m.text
+                    }))
+                  ]
+                })
+              });
+
+              const data = await res.json();
+              const botMsg = {
+                sender: 'bot',
+                text: `🧠 FoundryBot: ${data.reply}`,
+                canvas: data.canvas || formatBusinessPlan(newPlan)
+              };
+
+              const updatedMsgs = [...newMessages, botMsg];
+              saveMessages(updatedMsgs);
+              setCanvasContent(data.canvas || formatBusinessPlan(newPlan));
+            } catch (error) {
+              const errMsg = { sender: 'bot', text: `🧠 FoundryBot: Sorry, something went wrong.` };
+              saveMessages([...newMessages, errMsg]);
+            } finally {
+              setIsTyping(false);
+            }
           }}>
           <input
             type="text"
@@ -180,6 +219,7 @@ function App() {
               style={{ marginLeft: '5px' }}
             />
           </label>
+          <button onClick={checkDomainAvailability} style={{ padding: '6px 10px' }}>Check Domain</button>
         </div>
       </div>
     </div>
