@@ -10,6 +10,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [canvasContent, setCanvasContent] = useState('');
+  const [businessPlan, setBusinessPlan] = useState({});
   const chatEndRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -35,29 +36,35 @@ function App() {
     const initialMessages = [botMsg];
     saveMessages(initialMessages);
     setCanvasContent('');
+    setBusinessPlan({});
   };
 
-  const funnelQuestions = [
-    'Who is your target audience?',
-    'What makes your idea unique or different?',
-    'Would you prefer a website, an app, or both?',
-    'What brand tone do you want — fun, bold, professional, luxury, etc.?',
-    'Do you want help with naming your business?',
-    'Would you like me to check domain name availability?',
-    'Would you like help designing a logo?',
-    'Do you want help with marketing strategies?',
-    'Do you want help with tech setup (email, payments, etc.)?',
-    'Do you want a lightweight startup kit or a full build with automation and AI features?',
-    'Would you like to begin setting up your domain and hosting?'
+  const funnelPrompts = [
+    ['idea', 'What is your newest empire going to be?'],
+    ['audience', 'Who is your target audience?'],
+    ['unique', 'What makes your idea unique or different?'],
+    ['platform', 'Would you prefer a website, an app, or both?'],
+    ['tone', 'What brand tone do you want — fun, bold, professional, luxury, etc.?'],
+    ['nameHelp', 'Do you want help with naming your business?'],
+    ['domain', 'Would you like me to check domain name availability?'],
+    ['logo', 'Would you like help designing a logo?'],
+    ['marketing', 'Do you want help with marketing strategies?'],
+    ['tech', 'Do you want help with tech setup (email, payments, etc.)?'],
+    ['buildType', 'Do you want a lightweight startup kit or a full build with automation and AI features?'],
+    ['hosting', 'Would you like to begin setting up your domain and hosting?']
   ];
 
-  const getNextStagePrompt = (messages) => {
-    const lastUserMsg = [...messages].reverse().find(m => m.sender === 'user');
-    const lastBotQuestion = [...messages].reverse().find(m => m.sender === 'bot' && funnelQuestions.some(q => m.text.includes(q)));
-    const answered = lastBotQuestion && lastUserMsg && messages.indexOf(lastUserMsg) > messages.indexOf(lastBotQuestion)
-      ? funnelQuestions.findIndex(q => lastBotQuestion.text.includes(q)) + 1
-      : funnelQuestions.findIndex(q => lastBotQuestion?.text.includes(q));
-    return funnelQuestions[answered] || null;
+  const getNextPromptKey = (currentPlan) => {
+    return funnelPrompts.find(([key]) => !currentPlan[key]);
+  };
+
+  const formatBusinessPlan = (plan) => {
+    return `
+      <h2>🧠 Business Blueprint</h2>
+      <ul>
+        ${Object.entries(plan).map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`).join('')}
+      </ul>
+    `;
   };
 
   useEffect(() => {
@@ -101,32 +108,19 @@ function App() {
             saveMessages(newMessages);
             setInput('');
             setIsTyping(true);
-            const chatHistory = newMessages.map((m) => ({
-              role: m.sender === 'user' ? 'user' : 'assistant',
-              content: m.text.replace('🧠 FoundryBot: ', '')
-            }));
-            try {
-              const res = await fetch('http://localhost:3001/api/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: chatHistory })
-              });
-              const data = await res.json();
-              const botText = `🧠 FoundryBot: ${data.reply}`;
-              const botMsg = { sender: 'bot', text: botText, canvas: data.canvas };
-              const finalMsgs = [...newMessages, botMsg];
-              saveMessages(finalMsgs);
-              setCanvasContent(data.canvas);
 
-              const nextPrompt = getNextStagePrompt(finalMsgs);
-              if (nextPrompt) {
-                const nextMsg = { sender: 'bot', text: `🧠 FoundryBot: ${nextPrompt}` };
-                saveMessages([...finalMsgs, nextMsg]);
-              }
-            } catch (err) {
-              const errMsg = { sender: 'bot', text: `❌ Failed to fetch AI response.` };
-              saveMessages([...newMessages, errMsg]);
-            }
+            const currentKey = getNextPromptKey(businessPlan)?.[0];
+            if (currentKey) setBusinessPlan({ ...businessPlan, [currentKey]: input });
+            const newPlan = { ...businessPlan, [currentKey]: input };
+            setBusinessPlan(newPlan);
+            setCanvasContent(formatBusinessPlan(newPlan));
+
+            const nextPrompt = getNextPromptKey(newPlan)?.[1];
+            const botMsg = nextPrompt
+              ? { sender: 'bot', text: `🧠 FoundryBot: ${nextPrompt}`, canvas: formatBusinessPlan(newPlan) }
+              : { sender: 'bot', text: `🧠 FoundryBot: That's your full plan! Ready to deploy!`, canvas: formatBusinessPlan(newPlan) };
+            const finalMsgs = [...newMessages, botMsg];
+            saveMessages(finalMsgs);
             setIsTyping(false);
           }}>
           <input
