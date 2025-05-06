@@ -1,6 +1,7 @@
+// server.js
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import { OpenAI } from 'openai';
 
 dotenv.config();
@@ -12,42 +13,40 @@ app.use(cors());
 app.use(express.json());
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 app.post('/api/generate', async (req, res) => {
   try {
-    const { messages } = req.body;
+    const { prompt } = req.body;
 
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: 'Missing or invalid message history' });
+    if (!prompt) {
+      return res.status(400).json({ error: 'Missing prompt in request body' });
     }
 
-    const fullMessages = [
-      {
-        role: 'system',
-        content:
-          "You are FoundryBot, a helpful AI co-founder that guides users step-by-step through building a business. Ask one question at a time and build toward delivering a complete, launch-ready business. Be helpful, conversational, and strategic."
-      },
-      ...messages
-    ];
-
-    const completion = await openai.chat.completions.create({
+    const chat = await openai.chat.completions.create({
+      messages: [
+        {
+          role: 'system',
+          content: 'You are FoundryBot, a business-building AI co-founder. Respond with practical and positive advice to help build the user’s idea into a real company, one step at a time.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
       model: 'gpt-4',
-      messages: fullMessages,
       temperature: 0.7,
-      max_tokens: 600
     });
 
-    const reply = completion.choices[0].message.content.trim();
-
-    return res.status(200).json({
+    const reply = chat.choices[0].message.content;
+    res.json({
       reply,
-      canvas: `<div><strong>🧠 AI Suggestion:</strong><br/>${reply}</div>`
+      canvas: `<div><strong>🛠️ AI Suggestion:</strong><br/>${reply.replace(/\n/g, '<br/>')}</div>`
     });
-  } catch (err) {
-    console.error('OpenAI API error:', err);
-    return res.status(500).json({ error: 'Failed to generate AI response.' });
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    res.status(500).json({ error: 'Failed to generate response' });
   }
 });
 
