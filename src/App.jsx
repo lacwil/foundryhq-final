@@ -50,7 +50,11 @@ function App() {
   ];
 
   const getNextStagePrompt = (messages) => {
-    const answered = messages.filter(m => m.sender === 'user').length - 1;
+    const lastUserMsg = [...messages].reverse().find(m => m.sender === 'user');
+    const lastBotQuestion = [...messages].reverse().find(m => m.sender === 'bot' && funnelQuestions.some(q => m.text.includes(q)));
+    const answered = lastBotQuestion && lastUserMsg && messages.indexOf(lastUserMsg) > messages.indexOf(lastBotQuestion)
+      ? funnelQuestions.findIndex(q => lastBotQuestion.text.includes(q)) + 1
+      : funnelQuestions.findIndex(q => lastBotQuestion?.text.includes(q));
     return funnelQuestions[answered] || null;
   };
 
@@ -68,11 +72,11 @@ function App() {
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isTyping]);
 
   return (
-    <div className="app">
-      <div className="sidebar">
+    <div className="app" style={{ display: 'flex', height: '100vh' }}>
+      <div className="sidebar" style={{ width: '300px', overflow: 'auto', borderRight: '1px solid #ccc', display: 'flex', flexDirection: 'column' }}>
         <h2>FoundryBot</h2>
         <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
           {projects.map((p) => (
@@ -80,7 +84,7 @@ function App() {
           ))}
         </select>
         <button onClick={resetProject}>+ New Project</button>
-        <div className="chat-box">
+        <div className="chat-box" style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
           {messages.map((msg, idx) => (
             <div key={idx} className={`message ${msg.sender}`}>{msg.sender === 'user' ? `You: ${msg.text}` : msg.text}</div>
           ))}
@@ -128,11 +132,12 @@ function App() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
+            style={{ flex: 1 }}
           />
           <button type="submit">Send</button>
         </form>
       </div>
-      <div className="canvas">
+      <div className="canvas" style={{ flex: 1, padding: '20px' }}>
         <h1>Canvas Area</h1>
         <p>This is your interactive project area for: <strong>{selectedProject}</strong></p>
         <div className="canvas-content">

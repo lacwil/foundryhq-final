@@ -1,50 +1,50 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+import { OpenAI } from 'openai';
+import dotenv from 'dotenv';
+import express from 'express';
 
+dotenv.config();
+const router = express.Router();
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+router.post('/generate', async (req, res) => {
   try {
-    const { prompt } = req.body;
-    if (!prompt) {
-      return res.status(400).json({ error: 'Missing prompt' });
-    }
+    const messages = req.body.messages || [];
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      console.error("Missing API key.");
-      return res.status(500).json({ error: 'Missing OpenAI API key' });
-    }
+    const systemPrompt = `
+You are FoundryBot, a friendly AI co-founder that helps users build, launch, and scale their business ideas.
+You never suggest outsourcing or external developers. Instead, you act as the builder, tech expert, branding advisor, and launch assistant.
 
-    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
-        max_tokens: 500
-      })
+You ask one question at a time based on a structured funnel. Each question builds toward creating a real, working business.
+Ask follow-up questions only when absolutely needed to help progress toward a finished app or website.
+
+Your job is to turn an idea into a ready-to-launch business by:
+1. Defining the brand
+2. Suggesting names and checking domain availability
+3. Generating logos and design style
+4. Writing homepage copy and layout
+5. Scaffolding app or website code
+6. Planning hosting and deployment
+7. Offering a marketing plan (ads, social, email)
+
+If the user seems vague, guide them with practical examples.
+Always respond with confidence, initiative, and progress.
+    `.trim();
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages
+      ],
+      temperature: 0.7,
     });
 
-    const data = await openaiRes.json();
-
-    if (!openaiRes.ok) {
-      console.error("OpenAI error response:", data);
-      return res.status(500).json({ error: 'Error from OpenAI API' });
-    }
-
-    const reply = data.choices?.[0]?.message?.content?.trim() || "🤖 No response from AI.";
-
-    res.status(200).json({
-      reply,
-      canvas: `<div><strong>🛠️ AI Suggestion:</strong><br/>${reply}</div>`
-    });
-
+    const reply = completion.choices[0].message.content;
+    res.json({ reply, canvas: reply });
   } catch (err) {
-    console.error("API Error:", err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error in /generate route:', err.message);
+    res.status(500).json({ error: 'Failed to generate AI response' });
   }
-}
+});
+
+export default router;
