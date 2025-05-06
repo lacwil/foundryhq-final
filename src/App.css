@@ -1,80 +1,95 @@
-body, html, #root, .app {
-  height: 100%;
+/* App.css */
+
+body {
   margin: 0;
-  padding: 0;
-  font-family: sans-serif;
+  font-family: Arial, sans-serif;
 }
 
 .app {
   display: flex;
   height: 100vh;
-  overflow: hidden;
 }
 
 .sidebar {
   width: 300px;
-  background: #f3f3f3;
-  padding: 20px;
-  box-sizing: border-box;
+  border-right: 1px solid #ccc;
   display: flex;
   flex-direction: column;
+  background: #f8f8f8;
 }
 
-h2 {
-  margin-top: 0;
-}
-
-select, button {
-  margin-bottom: 10px;
-  width: 100%;
-  padding: 8px;
+.sidebar h2 {
+  padding: 10px;
+  margin: 0;
 }
 
 .chat-box {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 10px;
-  background: #fff;
-  border: 1px solid #ccc;
   padding: 10px;
 }
 
 .message {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   padding: 8px;
-  border-radius: 6px;
-  word-wrap: break-word;
+  border-radius: 4px;
+  white-space: pre-wrap;
 }
 
 .message.user {
-  background: #d3f8d3;
+  background-color: #d2f4d2;
 }
 
 .message.bot {
-  background: #e5e5ff;
+  background-color: #e2e2ff;
 }
 
 form {
   display: flex;
-  gap: 10px;
+  padding: 10px;
+  border-top: 1px solid #ccc;
 }
 
-input[type="text"] {
+form input[type="text"] {
   flex: 1;
   padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-button[type="submit"] {
-  padding: 8px 16px;
+form button {
+  margin-left: 10px;
+  padding: 8px 12px;
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .canvas {
   flex: 1;
   padding: 20px;
-  overflow-y: auto;
-  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 .canvas-content {
-  margin-top: 20px;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.toolbar {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #f0f0f0;
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10;
 }

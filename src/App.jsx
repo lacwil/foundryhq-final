@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import CanvasDraw from "react-canvas-draw";
 
 const DEFAULT_PROJECT = 'Default Project';
 
@@ -10,6 +11,7 @@ function App() {
   const [isTyping, setIsTyping] = useState(false);
   const [canvasContent, setCanvasContent] = useState('');
   const chatEndRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const getStorageKey = (project) => `foundry_chat_${project}`;
   const getSavedProjects = () => {
@@ -137,12 +139,53 @@ function App() {
           <button type="submit">Send</button>
         </form>
       </div>
-      <div className="canvas" style={{ flex: 1, padding: '20px' }}>
+      <div className="canvas" style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         <h1>Canvas Area</h1>
         <p>This is your interactive project area for: <strong>{selectedProject}</strong></p>
-        <div className="canvas-content">
+        <div className="canvas-content" style={{ marginBottom: '20px' }}>
           <strong>🧠 AI Suggestion:</strong>
           <div dangerouslySetInnerHTML={{ __html: canvasContent || 'No response yet.' }} />
+        </div>
+        <CanvasDraw
+          ref={canvasRef}
+          canvasWidth={800}
+          canvasHeight={400}
+          lazyRadius={1}
+          brushRadius={2}
+          hideGrid={true}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '20px',
+            right: '20px',
+            background: '#f0f0f0',
+            borderRadius: '10px',
+            padding: '10px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            zIndex: 10
+          }}
+        >
+          <button onClick={() => canvasRef.current.undo()} style={{ padding: '6px 10px' }}>
+            Undo
+          </button>
+          <button onClick={() => canvasRef.current.clear()} style={{ padding: '6px 10px' }}>
+            Clear
+          </button>
+          <label style={{ fontSize: '14px' }}>
+            🖌️
+            <input
+              type="range"
+              min="1"
+              max="10"
+              defaultValue="2"
+              onChange={(e) => (canvasRef.current.brushRadius = parseInt(e.target.value))}
+              style={{ marginLeft: '5px' }}
+            />
+          </label>
         </div>
       </div>
     </div>
