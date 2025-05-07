@@ -1,171 +1,181 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { FaTrash, FaPaintBrush, FaPalette } from 'react-icons/fa';
-
-const DEFAULT_PROJECT = 'Default Project';
+import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { talkToFoundryBot } from './foundryAI';
+import { saveAs } from 'file-saver';
 
 function App() {
-  const canvasRef = useRef(null);
-  const ctxRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [brushColor, setBrushColor] = useState('#000000');
-  const [brushSize, setBrushSize] = useState(4);
-  const [selectedProject, setSelectedProject] = useState(DEFAULT_PROJECT);
-  const [projects, setProjects] = useState([DEFAULT_PROJECT]);
-  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const chatEndRef = useRef(null);
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem('foundryMessages');
+    return saved ? JSON.parse(saved) : [
+      {
+        role: "system",
+        content: `You are FoundryBot, a GPT-4-powered AI assistant who works just like ChatGPT.
+You are embedded in FoundryHQ — a platform to help users build real online businesses from scratch.
+
+You have full freedom to:
+- Discuss ideas conversationally
+- Ask smart questions to clarify
+- Generate and revise React, Node.js, and API code
+- Save or modify project files
+- Help the user build and deploy their project from start to finish
+
+You are friendly, clever, proactive, and focused on implementation over theory.
+If the user says something vague, always ask helpful questions or offer suggestions.
+If the user says "implement" or "make it real" — write and save the code immediately.`
+      },
+      {
+        role: "user",
+        content: `My newest empire is an AI business-building platform with 3 tiers:
+1. Growth Spark: Marketing for existing businesses
+2. Launch Kit: Website + marketing for new businesses
+3. Empire Mode: Fully guided AI-powered business creation with domain, site, and launch
+
+Your job is to help me build the whole thing from scratch inside this app. Ask me what I want to create, and help me code it live.`
+      }
+    ];
+  });
+
+  const [renderedComponents, setRenderedComponents] = useState([]);
+  const [pendingComponent, setPendingComponent] = useState(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = brushColor;
-    ctx.lineWidth = brushSize;
-    ctxRef.current = ctx;
-  }, [brushColor, brushSize]);
+    localStorage.setItem('foundryMessages', JSON.stringify(messages));
+  }, [messages]);
 
-  const startDrawing = ({ nativeEvent }) => {
-    const { offsetX, offsetY } = nativeEvent;
-    ctxRef.current.beginPath();
-    ctxRef.current.moveTo(offsetX, offsetY);
-    setIsDrawing(true);
-  };
-
-  const finishDrawing = () => {
-    ctxRef.current.closePath();
-    setIsDrawing(false);
-  };
-
-  const draw = ({ nativeEvent }) => {
-    if (!isDrawing) return;
-    const { offsetX, offsetY } = nativeEvent;
-    ctxRef.current.lineTo(offsetX, offsetY);
-    ctxRef.current.stroke();
-  };
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
-  };
-
-  const handleSend = (e) => {
-    e.preventDefault();
+  const handleSend = async () => {
     if (!input.trim()) return;
-    const newMessages = [...messages, { sender: 'user', text: input }];
+    const newMessages = [...messages, { role: 'user', content: input }];
     setMessages(newMessages);
     setInput('');
-    setTimeout(() => {
-      const botMsg = {
-        sender: 'bot',
-        text: `🧠 FoundryBot: You said "${input}". Let's build on that.`
-      };
-      setMessages(prev => [...prev, botMsg]);
-    }, 500);
+
+    const reply = await talkToFoundryBot(newMessages);
+    const updatedMessages = [...newMessages, { role: 'assistant', content: reply }];
+    setMessages(updatedMessages);
+
+    const implementMatch = input.match(/implement as (.+\.jsx)/i);
+    if (implementMatch) {
+      const filename = implementMatch[1];
+      const componentName = filename.replace('.jsx', '');
+      setPendingComponent({ filename, code: reply, componentName });
+    }
   };
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.ctrlKey) {
+      e.preventDefault();
+      handleSend();
+    } else if (e.key === 'Enter' && e.ctrlKey) {
+      setInput((prev) => prev + '\n');
+    }
+  };
+
+  const handleImplement = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/save-component', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filename: pendingComponent.filename,
+          code: pendingComponent.code
+        })
+      });
+
+      if (response.ok) {
+        setRenderedComponents((prev) => [...prev, pendingComponent.componentName]);
+        setPendingComponent(null);
+      } else {
+        alert('Failed to save file to components folder.');
+      }
+    } catch (error) {
+      console.error('Error saving file:', error);
+      alert('An error occurred while saving the file.');
+    }
+  };
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
-      <div style={{ width: '300px', borderRight: '1px solid #ccc', padding: '10px', display: 'flex', flexDirection: 'column' }}>
-        <h2>FoundryBot</h2>
-        <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
-          {projects.map((proj, idx) => (
-            <option key={idx}>{proj}</option>
-          ))}
-        </select>
-        <button onClick={() => setMessages([])}>+ New Project</button>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {messages.map((msg, idx) => (
-            <div key={idx} style={{ background: msg.sender === 'bot' ? '#e0e0ff' : '#d0ffd0', margin: '5px', padding: '8px', borderRadius: '5px' }}>
-              {msg.sender === 'bot' ? msg.text : `You: ${msg.text}`}
+      {/* Chat panel */}
+      <div style={{ flex: 1, padding: 20, borderRight: '1px solid #ccc', overflowY: 'auto' }}>
+        <h1>🧠 FoundryBot</h1>
+        <div style={{ marginBottom: 10 }}>
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              style={{
+                margin: '10px 0',
+                padding: '10px 14px',
+                backgroundColor: msg.role === 'assistant' ? '#f0f4ff' : '#e9f9ec',
+                borderRadius: '8px',
+                color: '#333',
+                fontWeight: 'normal',
+                maxWidth: '95%',
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+              <strong style={{ display: 'block', marginBottom: 4 }}>
+                {msg.role === 'assistant' ? '🧠 FoundryBot:' : '🧍 You:'}
+              </strong>
+              {msg.content}
             </div>
           ))}
-          <div ref={chatEndRef} />
         </div>
-        <form onSubmit={handleSend} style={{ display: 'flex', gap: '5px' }}>
-          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} style={{ flex: 1 }} placeholder="Type your message..." />
-          <button type="submit">Send</button>
-        </form>
+        <textarea
+          rows={3}
+          style={{ width: '100%', marginBottom: 10 }}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Type a message... (Enter to send, Ctrl+Enter for newline)"
+        />
+        <button onClick={handleSend}>Send</button>
       </div>
 
-      <div style={{ flex: 1, position: 'relative' }}>
-        <canvas
-          ref={canvasRef}
-          style={{ width: '100%', height: '100%', display: 'block', cursor: 'crosshair' }}
-          onMouseDown={startDrawing}
-          onMouseUp={finishDrawing}
-          onMouseMove={draw}
-          onMouseLeave={finishDrawing}
-        />
+      {/* Rendered component panel */}
+      <div style={{ flex: 1.5, padding: 20, overflowY: 'auto' }}>
+        {renderedComponents.map((compName, idx) => {
+          const Component = lazy(() => import(/* @vite-ignore */ `./components/${compName}.jsx`));
+          return (
+            <Suspense fallback={<div>Loading {compName}...</div>} key={idx}>
+              <Component />
+            </Suspense>
+          );
+        })}
 
-        <div style={{
-          position: 'absolute',
-          bottom: '30px',
-          right: '30px',
-          width: '140px',
-          height: '140px',
-          borderRadius: '50%',
-          background: '#ffffff',
-          boxShadow: '0 0 12px rgba(0, 0, 0, 0.2)',
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: '10px',
-          padding: '10px'
-        }}>
-          <button
-            onClick={clearCanvas}
-            title="Clear Canvas"
-            style={{
-              background: '#000',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              cursor: 'pointer'
-            }}
-          >
-            <FaTrash />
-          </button>
-
-          <label title="Brush Color">
-            <FaPalette style={{ fontSize: '18px', marginBottom: '4px' }} />
-            <input
-              type="color"
-              value={brushColor}
-              onChange={(e) => setBrushColor(e.target.value)}
+        {pendingComponent && (
+          <div style={{ marginTop: 20 }}>
+            <h3>📦 Pending Component Preview: {pendingComponent.filename}</h3>
+            <pre
               style={{
-                width: '40px',
-                height: '40px',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer'
+                background: '#f7f7f7',
+                padding: '10px',
+                borderRadius: '6px',
+                whiteSpace: 'pre-wrap',
+                fontSize: '0.9em',
+                maxHeight: '300px',
+                overflowY: 'auto',
               }}
-            />
-          </label>
-
-          <label title="Brush Size" style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-            <FaPaintBrush style={{ fontSize: '18px' }} />
-            <input
-              type="range"
-              min="1"
-              max="20"
-              value={brushSize}
-              onChange={(e) => setBrushSize(parseInt(e.target.value))}
-              style={{ width: '60px' }}
-            />
-          </label>
-        </div>
+            >
+              {pendingComponent.code}
+            </pre>
+            <div style={{ marginTop: 10 }}>
+              <button onClick={() => {
+                setRenderedComponents((prev) => [...prev, pendingComponent.componentName]);
+                setPendingComponent(null);
+              }} style={{ marginRight: 10 }}>
+                👁 Preview
+              </button>
+              <button onClick={handleImplement} style={{ marginRight: 10 }}>
+                ✅ Implement
+              </button>
+              <button onClick={() => setPendingComponent(null)}>✏️ Make Changes</button>
+            </div>
+            <p style={{ fontSize: '0.85em', color: '#777', marginTop: 10 }}>
+              💾 The component will be saved directly into <code>src/components/</code>.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
