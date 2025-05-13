@@ -37,9 +37,22 @@ Your job is to help me build the whole thing from scratch inside this app. Ask m
 
   const [renderedComponents, setRenderedComponents] = useState([]);
   const [pendingComponent, setPendingComponent] = useState(null);
+  const bottomRef = useRef();
 
   useEffect(() => {
     localStorage.setItem('foundryMessages', JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    if (messages.length <= 2) {
+      const welcomeInput = "What do you want to build today?";
+      const newMessages = [...messages, { role: 'assistant', content: welcomeInput }];
+      setMessages(newMessages);
+    }
+  }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSend = async () => {
@@ -56,7 +69,17 @@ Your job is to help me build the whole thing from scratch inside this app. Ask m
     if (implementMatch) {
       const filename = implementMatch[1];
       const componentName = filename.replace('.jsx', '');
+
+      await fetch('http://localhost:3001/save-component', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ filename, code: reply })
+      });
+
       setPendingComponent({ filename, code: reply, componentName });
+      setRenderedComponents((prev) => [...prev, componentName]);
     }
   };
 
@@ -86,11 +109,11 @@ Your job is to help me build the whole thing from scratch inside this app. Ask m
         setRenderedComponents((prev) => [...prev, pendingComponent.componentName]);
         setPendingComponent(null);
       } else {
-        alert('Failed to save file to components folder.');
+        alert('❌ Failed to save file to components folder.');
       }
     } catch (error) {
       console.error('Error saving file:', error);
-      alert('An error occurred while saving the file.');
+      alert('❌ An error occurred while saving the file.');
     }
   };
 
@@ -120,6 +143,7 @@ Your job is to help me build the whole thing from scratch inside this app. Ask m
               {msg.content}
             </div>
           ))}
+          <div ref={bottomRef} />
         </div>
         <textarea
           rows={3}
@@ -135,12 +159,16 @@ Your job is to help me build the whole thing from scratch inside this app. Ask m
       {/* Rendered component panel */}
       <div style={{ flex: 1.5, padding: 20, overflowY: 'auto' }}>
         {renderedComponents.map((compName, idx) => {
-          const Component = lazy(() => import(/* @vite-ignore */ `./components/${compName}.jsx`));
-          return (
-            <Suspense fallback={<div>Loading {compName}...</div>} key={idx}>
-              <Component />
-            </Suspense>
-          );
+          try {
+            const Component = lazy(() => import(/* @vite-ignore */ `./components/${compName}.jsx`));
+            return (
+              <Suspense fallback={<div>Loading {compName}...</div>} key={idx}>
+                <Component />
+              </Suspense>
+            );
+          } catch (err) {
+            return <div key={idx}>⚠️ Failed to load {compName}</div>;
+          }
         })}
 
         {pendingComponent && (
@@ -159,20 +187,20 @@ Your job is to help me build the whole thing from scratch inside this app. Ask m
             >
               {pendingComponent.code}
             </pre>
-            <div style={{ marginTop: 10 }}>
+            <div style={{ marginTop: 10, display: 'flex', gap: '10px' }}>
               <button onClick={() => {
                 setRenderedComponents((prev) => [...prev, pendingComponent.componentName]);
                 setPendingComponent(null);
-              }} style={{ marginRight: 10 }}>
+              }}>
                 👁 Preview
               </button>
-              <button onClick={handleImplement} style={{ marginRight: 10 }}>
+              <button onClick={handleImplement}>
                 ✅ Implement
               </button>
               <button onClick={() => setPendingComponent(null)}>✏️ Make Changes</button>
             </div>
             <p style={{ fontSize: '0.85em', color: '#777', marginTop: 10 }}>
-              💾 The component will be saved directly into <code>src/components/</code>.
+              💾 The component has already been saved to <code>src/components/</code> for previewing.
             </p>
           </div>
         )}
