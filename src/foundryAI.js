@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
 if (!apiKey) {
-  console.error('❌ Missing VITE_OPENAI_API_KEY in environment variables');
+  console.warn('⚠️ VITE_OPENAI_API_KEY is missing. Please set it in your Vercel project settings.');
 }
 
 const openai = new OpenAI({
