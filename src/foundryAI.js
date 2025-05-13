@@ -1,20 +1,17 @@
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY, // VITE_ prefix required for Vercel frontend access
-  dangerouslyAllowBrowser: true, // ⚠️ Allow client-side access (needed for browser use)
-});
-
 export async function talkToFoundryBot(messages) {
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages,
+    const res = await fetch('/api/talk', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ messages }),
     });
 
-    return response.choices[0].message.content.trim();
+    const data = await res.json();
+    return data.message || 'No message returned.';
   } catch (error) {
-    console.error('❌ OpenAI request failed:', error);
+    console.error('❌ Error talking to FoundryBot:', error);
     return 'There was an error communicating with FoundryBot.';
   }
 }
