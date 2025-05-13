@@ -12,14 +12,16 @@ export default async function handler(req, res) {
   try {
     const { messages } = req.body;
 
-    const response = await openai.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages,
     });
 
-    res.status(200).json({ message: response.choices[0].message.content.trim() });
+    return res.status(200).json({
+      message: completion.choices[0].message.content.trim(),
+    });
   } catch (error) {
-    console.error('❌ OpenAI API error:', error);
-    res.status(500).json({ error: 'Failed to communicate with FoundryBot.' });
+    console.error('OpenAI Server Error:', error);
+    return res.status(500).json({ error: 'Server failed to fetch response from OpenAI' });
   }
 }
