@@ -1,17 +1,26 @@
+import OpenAI from 'openai';
+
+const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
+if (!apiKey) {
+  console.error('❌ Missing VITE_OPENAI_API_KEY in environment variables');
+}
+
+const openai = new OpenAI({
+  apiKey,
+  dangerouslyAllowBrowser: true,
+});
+
 export async function talkToFoundryBot(messages) {
   try {
-    const res = await fetch('/api/talk', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ messages }),
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages,
     });
 
-    const data = await res.json();
-    return data.message || 'No message returned.';
+    return response.choices[0].message.content.trim();
   } catch (error) {
-    console.error('❌ Error talking to FoundryBot:', error);
+    console.error('❌ OpenAI request failed:', error);
     return 'There was an error communicating with FoundryBot.';
   }
 }
