@@ -1,26 +1,26 @@
-import OpenAI from 'openai';
+// src/foundryAI.js
 
-const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-
-if (!apiKey) {
-  console.warn('⚠️ VITE_OPENAI_API_KEY is missing. Please set it in your Vercel project settings.');
-}
-
-const openai = new OpenAI({
-  apiKey,
-  dangerouslyAllowBrowser: true,
-});
-
-export async function talkToFoundryBot(messages) {
+// Listen for the preview event
+window.addEventListener('foundrybot-preview', async () => {
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages,
-    });
+    const response = await fetch('/generated/latest.html');
 
-    return response.choices[0].message.content.trim();
-  } catch (error) {
-    console.error('❌ OpenAI request failed:', error);
-    return 'There was an error communicating with FoundryBot.';
+    if (!response.ok) {
+      throw new Error('Failed to load preview.');
+    }
+
+    const html = await response.text();
+
+    const canvasOutput = document.querySelector('div[style*="Canvas Output"]')
+      ?.nextElementSibling;
+
+    if (canvasOutput) {
+      canvasOutput.innerHTML = html;
+    } else {
+      console.error('❌ Canvas output area not found.');
+    }
+  } catch (err) {
+    console.error('❌ Preview error:', err.message);
+    alert('Preview failed.');
   }
-}
+});
