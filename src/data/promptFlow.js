@@ -1,147 +1,129 @@
-// src/data/promptFlow.js
-
-const promptFlow = [
+export const promptFlow = [
   {
-    id: "businessIdea",
-    type: "text",
-    prompt: "What’s your business idea?"
+    id: "start",
+    message: "Hey there! Let’s start building your business. What’s your idea?",
+    next: "targetAudience"
   },
   {
     id: "targetAudience",
-    type: "text",
-    prompt: "Who is your ideal customer or target audience?"
+    message: "Awesome idea! Who do you see buying or using this the most — home cooks, creators, busy parents?",
+    next: "corePurpose"
   },
   {
     id: "corePurpose",
-    type: "text",
-    prompt: "What will your business help them do or achieve?"
+    message: "Love it. What's the main purpose of your business? (e.g. solve a problem, start a trend, offer value)",
+    next: "features"
   },
   {
-    id: "keyFeatures",
-    type: "multi-select",
-    prompt: "Which features do you need?",
-    options: [
-      "E-commerce / Sell products",
-      "Booking system",
-      "Membership or subscriptions",
-      "Blog or content site",
-      "AI assistant",
-      "Email list signup",
-      "Other"
-    ]
+    id: "features",
+    message: "What key features will your product or service offer? (Select as many as you like)",
+    options: ["Easy to use", "Affordable", "Premium quality", "Automated", "Eco-friendly"],
+    next: "businessType"
   },
   {
     id: "businessType",
-    type: "choice",
-    prompt: "What type of business is this?",
-    options: ["Physical Products", "Digital Products", "Services", "Community / Content Platform"]
+    message: "What type of business are you building?",
+    options: ["Physical Products", "Digital Products", "Services", "Community / Content"],
+    nextByAnswer: {
+      "Physical Products": "hasPhysicalProducts",
+      "Digital Products": "hasDigitalProduct",
+      "Services": "needsBooking",
+      "Community / Content": "monetizeCommunity"
+    }
+  },
+
+  // PHYSICAL PRODUCTS FLOW
+  {
+    id: "hasPhysicalProducts",
+    message: "Do you already have products in stock or planned?",
+    next: "hasSupplier"
   },
   {
-    id: "physicalSupplier",
-    type: "conditional",
-    condition: (answers) => answers.businessType === "Physical Products",
-    questions: [
-      {
-        id: "hasSupplier",
-        type: "choice",
-        prompt: "Do you already have a supplier?",
-        options: ["Yes", "No"]
-      },
-      {
-        id: "needSupplierHelp",
-        type: "choice",
-        prompt: "Do you need help finding one (e.g. POD, AliExpress, local)?",
-        options: ["Yes", "No"]
-      }
-    ]
+    id: "hasSupplier",
+    message: "Do you already have a supplier?",
+    next: "needSourcing"
   },
   {
-    id: "digitalProductStatus",
-    type: "conditional",
-    condition: (answers) => answers.businessType === "Digital Products",
-    questions: [
-      {
-        id: "hasProduct",
-        type: "choice",
-        prompt: "Do you already have your digital products ready?",
-        options: ["Yes", "No"]
-      },
-      {
-        id: "needPackagingHelp",
-        type: "choice",
-        prompt: "Do you need help creating or packaging them (e.g. eBooks, downloads)?",
-        options: ["Yes", "No"]
-      }
-    ]
+    id: "needSourcing",
+    message: "Do you need help sourcing one (e.g. POD, AliExpress, local)?",
+    next: "designHelp"
+  },
+
+  // DIGITAL PRODUCTS FLOW
+  {
+    id: "hasDigitalProduct",
+    message: "Do you already have the digital product(s) ready?",
+    next: "needPackaging"
   },
   {
-    id: "servicesSetup",
-    type: "conditional",
-    condition: (answers) => answers.businessType === "Services",
-    questions: [
-      {
-        id: "needBooking",
-        type: "choice",
-        prompt: "Do you need a booking calendar?",
-        options: ["Yes", "No"]
-      },
-      {
-        id: "needPortal",
-        type: "choice",
-        prompt: "Do you need a client portal or team dashboard?",
-        options: ["Yes", "No"]
-      }
-    ]
+    id: "needPackaging",
+    message: "Would you like help creating or packaging them (e.g. eBooks, downloads)?",
+    next: "designHelp"
+  },
+
+  // SERVICES FLOW
+  {
+    id: "needsBooking",
+    message: "Do you need a booking or scheduling system for your service?",
+    next: "needsPortal"
   },
   {
-    id: "communitySetup",
-    type: "conditional",
-    condition: (answers) => answers.businessType === "Community / Content Platform",
-    questions: [
-      {
-        id: "monetization",
-        type: "choice",
-        prompt: "Do you plan to monetize with memberships or ads?",
-        options: ["Memberships", "Ads", "Not yet"]
-      },
-      {
-        id: "needCommunityHelp",
-        type: "choice",
-        prompt: "Do you want help structuring your community space?",
-        options: ["Yes", "No"]
-      }
-    ]
+    id: "needsPortal",
+    message: "Would your clients or team need a portal to log in and manage sessions?",
+    next: "designHelp"
   },
+
+  // COMMUNITY/CONTENT FLOW
+  {
+    id: "monetizeCommunity",
+    message: "Are you planning to monetize with memberships, subscriptions, or ads?",
+    next: "buildCommunity"
+  },
+  {
+    id: "buildCommunity",
+    message: "Do you want help building the structure for your content or community space?",
+    next: "designHelp"
+  },
+
+  // UNIVERSAL DESIGN + DOMAIN
   {
     id: "designHelp",
-    type: "choice",
-    prompt: "Do you want help creating a logo and brand visuals?",
-    options: ["Yes", "No"]
+    message: "Would you like help with your logo or brand visuals?",
+    options: ["Yes", "No"],
+    nextByAnswer: {
+      "Yes": "generateLogo",
+      "No": "domainHelp"
+    }
+  },
+  {
+    id: "generateLogo",
+    message: "Great! I’ll help you design a logo that matches your brand tone. One moment…",
+    next: "domainHelp"
   },
   {
     id: "domainHelp",
-    type: "choice",
-    prompt: "Do you want to check if your domain is available?",
-    options: ["Yes", "No"]
+    message: "Do you want help finding an available domain name?",
+    options: ["Yes", "No"],
+    nextByAnswer: {
+      "Yes": "brandTone",
+      "No": "brandTone"
+    }
   },
   {
     id: "brandTone",
-    type: "choice",
-    prompt: "What tone should your brand have?",
-    options: ["Professional", "Bold", "Fun / Playful", "Luxury", "Minimalist", "Surprise me"]
+    message: "Which tone best describes your brand?",
+    options: ["Playful", "Professional", "Luxury", "Minimal", "Bold"],
+    next: "platformTarget"
   },
   {
     id: "platformTarget",
-    type: "choice",
-    prompt: "Where will this business live?",
-    options: ["Website", "Web App", "Mobile App", "All of the above"]
+    message: "Where do you want this to live — as a website, mobile app, or both?",
+    options: ["Website", "Mobile App", "Both"],
+    next: "letsBuild"
   },
   {
-    id: "finalStep",
-    type: "end",
-    prompt: "Great! Let’s build your project now…"
+    id: "letsBuild",
+    message: "Awesome — let’s build your project! 🚀 You’ll get a full draft to review next.",
+    next: null
   }
 ];
-
-export default promptFlow;
-s
