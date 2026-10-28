@@ -66,7 +66,7 @@ const HelpSidebar = () => {
 
             <h4>🔐 API Keys</h4>
             <ul>
-              <li>VITE_OPENAI_API_KEY (frontend)</li>
+              <li>OPENAI_API_KEY (server only)</li>
               <li>OPENAI_API_KEY (backend)</li>
             </ul>
 
