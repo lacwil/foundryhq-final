@@ -1,19 +1,12 @@
-// src/utils/openai.js
-import { Configuration, OpenAIApi } from "openai";
-
-const configuration = new Configuration({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-});
-
-const openai = new OpenAIApi(configuration);
-
-export async function askFoundryBot(prompt) {
-  const response = await openai.createChatCompletion({
-    model: "gpt-4",
-    messages: [{ role: "system", content: "You are FoundryBot, a startup co-founder assistant that helps users build online businesses step-by-step." },
-               { role: "user", content: prompt }],
-    temperature: 0.7,
+export async function askFoundryBot(messages) {
+  const response = await fetch('/api/talk', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: typeof messages === 'string' ? [{ role: 'user', content: messages }] : messages }),
   });
-
-  return response.data.choices[0].message.content.trim();
+  const data = await response.json();
+  if (!response.ok || typeof data.message !== 'string' || !data.message.trim()) {
+    throw new Error('AI request failed. Check that the local API is running and configured.');
+  }
+  return data.message;
 }

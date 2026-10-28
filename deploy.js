@@ -1,22 +1,19 @@
-// deploy.js
+// Run manually only after owner approval; never run as part of setup or tests.
+const { execFile } = require('node:child_process');
+require('dotenv').config();
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const execAsync = promisify(exec);
-
-const VERCEL_TOKEN = process.env.VERCEL_TOKEN || 'kjau2Wpy954aOmJdJHX4vAh3';
-
-(async () => {
-  try {
-    console.log('🚀 Deploying with Vercel...');
-    const { stdout, stderr } = await execAsync(`vercel --token=${VERCEL_TOKEN} --prod --yes`);
-    if (stdout) console.log('✅ Deployment output:\n', stdout);
-    if (stderr) console.error('⚠️ Deployment warnings:\n', stderr);
-  } catch (error) {
-    console.error('❌ Deployment failed:', error.message);
-  }
-})();
+const token = process.env.VERCEL_TOKEN;
+if (!token) {
+  console.error('VERCEL_TOKEN is required for manual deployment.');
+  process.exitCode = 1;
+} else {
+  execFile('vercel', ['--token', token, '--prod', '--yes'], (error) => {
+    if (error) {
+      // CLI output and error.message can contain credentials. Do not echo them.
+      console.error('Deployment failed. Review the provider dashboard.');
+      process.exitCode = 1;
+    } else {
+      console.log('Deployment completed.');
+    }
+  });
+}

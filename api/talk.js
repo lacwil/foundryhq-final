@@ -1,27 +1,5 @@
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  try {
-    const { messages } = req.body;
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages,
-    });
-
-    return res.status(200).json({
-      message: completion.choices[0].message.content.trim(),
-    });
-  } catch (error) {
-    console.error('OpenAI Server Error:', error);
-    return res.status(500).json({ error: 'Server failed to fetch response from OpenAI' });
-  }
+// Public AI access stays closed until project authentication and rate limiting exist.
+// The supported local development endpoint is in server/app.cjs.
+export default function handler(req, res) {
+  return res.status(503).json({ error: 'Public AI access is disabled pending authentication. Use the local development API.' });
 }
